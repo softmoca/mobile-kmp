@@ -1,0 +1,15 @@
+{
+  "date": "2026-10-10",
+  "device": "iPhone 18 Pro / iOS Simulator 27.0",
+  "scheme": "iosAppDevSmoke",
+  "environment": "https://dev-api.jachwi-sunbae.kr",
+  "signing": "Local ad-hoc (CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=-)",
+  "tests": 1,
+  "failures": 0,
+  "durationSeconds": 36.628,
+  "verified": ["password visibility toggle", "nickname input", "live login", "empty property list", "process relaunch and Keychain session restoration", "native MapKit rendering", "logout"],
+  "result": "TEST SUCCEEDED",
+  "resultBundle": ".tools/ios-ui-signed.xcresult",
+  "screenshots": ["ios-empty-properties.png", "ios-mapkit.png"],
+  "cleanup": "Logged out. Random development QA member records remain because no member deletion endpoint exists; no properties were created in this UI test."
+}
