@@ -1,6 +1,8 @@
 # 실제 빌드·테스트 보고서
 
-검증일: **2026-10-10, Asia/Seoul**. 앱 디렉터리에서 실행했다. 서버 배포/운영 DB 변경/원격 push는 하지 않았다.
+검증일: **2026-10-10, Asia/Seoul**. 앱 디렉터리에서 실행했다. 아래 초기 구현 검증 단계에서는 서버 배포/운영 DB 변경/원격 push를 하지 않았다.
+
+후속 게시 단계에서 사용자 요청에 따라 [Issue #1](https://github.com/softmoca/mobile-kmp/issues/1)과 [Draft PR #2](https://github.com/softmoca/mobile-kmp/pull/2)를 생성하고 개인 저장소에 Push했다. `main`은 초기 기반 커밋 `25dabad`, PR 작업 브랜치는 `codex/kmp-mobile`이다. 실제 iPhone 설치·QA 준비는 [IPHONE_QA](IPHONE_QA.md)에 정리했으며, 기기 설치·Apple 계정 인증·서명 설정·Merge는 아직 수행하지 않았다. 이 후속 변경은 문서와 서명 파일 ignore 규칙이며 앱 코드는 변경하지 않았다.
 
 ## 환경
 

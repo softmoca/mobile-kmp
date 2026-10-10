@@ -58,6 +58,8 @@ Simulator도 Keychain에 접근하려면 로컬 ad-hoc 서명이 필요하다. A
 
 실제 iPhone에서는 Xcode의 Signing & Capabilities에서 자신의 Apple Team을 선택하고, 고유 Bundle Identifier를 설정한 뒤 연결한 기기를 선택한다. 기기에서 개발자 모드와 개발자 인증서 신뢰가 필요할 수 있다. 개인 Apple ID 서명 또는 배포 계정 인증은 사용자가 처리한다.
 
+처음 설치한다면 [실제 iPhone 설치·QA 안내](docs/IPHONE_QA.md)의 프로젝트 열기 → 기기 연결 → Team/서명 → Debug 실행 순서와 16개 점검 항목을 따른다. 서명 파일은 Git에 포함하지 않는다.
+
 ## API 환경과 키
 
 | 빌드 | API | 앱 식별자 |
@@ -95,3 +97,4 @@ RUN_DEV_API_SMOKE=1 ./gradlew :composeApp:testDebugUnitTest \
 - [PLATFORM](docs/PLATFORM.md): 권한·지도·보안 저장소·PDF
 - [IMPLEMENTATION_STATUS](docs/IMPLEMENTATION_STATUS.md): 기능별 구현과 미검증 범위
 - [BUILD_REPORT](docs/BUILD_REPORT.md): 실제 빌드·테스트 결과
+- [IPHONE_QA](docs/IPHONE_QA.md): 실제 iPhone 설치, Apple 서명, 기능별 수동 QA 및 오류 기록
