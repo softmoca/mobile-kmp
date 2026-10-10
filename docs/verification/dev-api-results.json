@@ -1,0 +1,14 @@
+{
+  "date": "2026-10-10",
+  "environment": "https://dev-api.jachwi-sunbae.kr",
+  "serverCommit": "fb5e371d7b56c2dee0df82d87c01205be8cf5a3f",
+  "client": "Kotlin ApiClient + Ktor OkHttp (Android JVM test)",
+  "tests": 2,
+  "failures": 0,
+  "skipped": 0,
+  "output": [
+    "DEV_SMOKE: auth/restore/empty/propertyCRUD/memo/templateCRUD/checkStatus/photoCRUD/PDF passed; PDF 63280 bytes",
+    "DEV_MAP: address search/reverse/nearby passed; places=173"
+  ],
+  "cleanup": "Test properties and user checklist deleted, empty property list confirmed. Two isolated test member records remain because the backend has no member deletion endpoint. Credentials were not persisted."
+}
