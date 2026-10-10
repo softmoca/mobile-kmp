@@ -1,0 +1,17 @@
+*.iml
+.idea/
+.gradle/
+.kotlin/
+.konan/
+.tools/
+**/build/
+local.properties
+.env
+.env.*
+!.env.example
+*.jks
+*.keystore
+*.mobileprovision
+.DS_Store
+**/xcuserdata/
+DerivedData/
