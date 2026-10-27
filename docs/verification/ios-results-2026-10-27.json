@@ -1,0 +1,28 @@
+{
+  "verifiedAt": "2026-10-27T15:35:04+09:00",
+  "codeCommit": "d750cce7608c03050baf484e8a07c9f72d00c72e",
+  "xcode": "27.1 (27A9275)",
+  "runtime": "iOS Simulator 27.0 (24A434)",
+  "device": "iPhone 18 Pro (isolated QA simulator)",
+  "apiOrigin": "https://dev-api.jachwi-sunbae.kr",
+  "suite": "iosAppUITests.SmokeTests",
+  "test": "testAnonymousSessionAndPropertyLifecycle",
+  "passed": 1,
+  "failed": 0,
+  "skipped": 0,
+  "durationSeconds": 121.11,
+  "verified": [
+    "same anonymous member after process restart",
+    "Keychain refresh session restored",
+    "native MapKit",
+    "29-character property name and long address",
+    "photo-empty presentation",
+    "memo saved via UI and read after process restart",
+    "test property deleted and empty list confirmed"
+  ],
+  "qaPropertyName": "KMP iOS QA 7F56EEC6 LONG-NAME",
+  "propertyCleanupConfirmed": true,
+  "physicalDeviceInstalled": false,
+  "deviceArm64UnsignedBuildSucceeded": true,
+  "resultBundle": ".tools/refresh-20261027/ios-ui-insets-fixed.xcresult"
+}

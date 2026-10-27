@@ -12,6 +12,13 @@ local.properties
 *.jks
 *.keystore
 *.mobileprovision
+*.p12
+*.p8
+*.pfx
+*.cer
+*.pem
+*.key
 .DS_Store
 **/xcuserdata/
 DerivedData/
+node_modules/

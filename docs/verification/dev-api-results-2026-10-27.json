@@ -1,0 +1,52 @@
+{
+  "verifiedAt": "2026-10-27T15:05:48+09:00",
+  "apiOrigin": "https://dev-api.jachwi-sunbae.kr",
+  "deployment": {
+    "version": "2.1.0",
+    "commit": "7e3fa9aa18f67bc1db75da92fd10df660cf3ca9f"
+  },
+  "referenceSourceCommit": "e7494a02b6a8c3081807b8b8755e7fec8b1e5c69",
+  "localTests": {
+    "api": 37,
+    "domain": 4,
+    "uiState": 13,
+    "failed": 0
+  },
+  "liveTests": {
+    "passed": 2,
+    "failed": 0,
+    "skipped": 0,
+    "durationSeconds": 7.36
+  },
+  "authentication": [
+    "anonymous login",
+    "refresh cookie restored same member with new client",
+    "explicit refresh",
+    "one real 401 followed by one refresh and retry",
+    "access token absent from persisted session"
+  ],
+  "features": [
+    "property CRUD",
+    "memo save and read",
+    "user checklist CRUD",
+    "both checklist stages",
+    "GOOD CAUTION UNCONFIRMED",
+    "item memo and progress",
+    "PNG upload/read/representative/delete",
+    "comparison PDF",
+    "geocode/reverse geocode/nearby/bus stops/category filter"
+  ],
+  "pdfBytes": 66002,
+  "nearbyPlaces": 155,
+  "busStops": 42,
+  "conveniencePlaces": 37,
+  "testRun": "4813d476",
+  "cleanup": {
+    "propertiesRemaining": 0,
+    "userChecklistsRemaining": 0,
+    "anonymousMembersCreated": 2,
+    "memberDeletionEndpointAvailable": false
+  },
+  "physicalDeviceVerified": false,
+  "productionMutationPerformed": false
+}

@@ -1,0 +1,11 @@
+{
+  "name": "jachwi-sunbae-mobile-docs",
+  "private": true,
+  "scripts": {
+    "format:docs": "prettier --config .prettierrc.json --ignore-path .prettierignore --write \"*.md\" \"docs/**/*.md\"",
+    "format:docs:check": "prettier --config .prettierrc.json --ignore-path .prettierignore --check \"*.md\" \"docs/**/*.md\""
+  },
+  "devDependencies": {
+    "prettier": "3.9.6"
+  }
+}
