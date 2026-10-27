@@ -17,6 +17,7 @@ final class IOSServices: NSObject, IOSPlatformBridge, PHPickerViewControllerDele
     private var tokenQuery: [String: Any] {
         [kSecClass as String: kSecClassGenericPassword,
          kSecAttrService as String: "\(Bundle.main.bundleIdentifier ?? "kr.jachwisunbae.app").session",
+         // Preserve the original item identity so ApiClient can migrate legacy access-token values.
          kSecAttrAccount as String: "access-token"]
     }
 
@@ -26,14 +27,20 @@ final class IOSServices: NSObject, IOSPlatformBridge, PHPickerViewControllerDele
         locationManager.desiredAccuracy = kCLLocationAccuracyHundredMeters
     }
 
-    func readToken() -> String? {
+    func readToken() -> SecureStorageReadResult {
         var query = tokenQuery
         query[kSecReturnData as String] = true
         query[kSecMatchLimit as String] = kSecMatchLimitOne
         var result: CFTypeRef?
-        guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess,
-              let data = result as? Data else { return nil }
-        return String(data: data, encoding: .utf8)
+        let status = SecItemCopyMatching(query as CFDictionary, &result)
+        if status == errSecItemNotFound { return SecureStorageReadResult(value: nil, error: nil) }
+        guard status == errSecSuccess else {
+            return SecureStorageReadResult(value: nil, error: "로그인 정보를 안전하게 읽지 못했습니다. (\(status))")
+        }
+        guard let data = result as? Data, let value = String(data: data, encoding: .utf8) else {
+            return SecureStorageReadResult(value: nil, error: "저장된 로그인 정보를 읽지 못했습니다.")
+        }
+        return SecureStorageReadResult(value: value, error: nil)
     }
 
     func writeToken(token: String) -> String? {

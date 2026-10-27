@@ -1,7 +1,6 @@
 package kr.jachwisunbae.app.ui
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -9,9 +8,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.*
 import androidx.savedstate.read
@@ -24,22 +20,23 @@ fun App(api: ApiClient, platform: PlatformServices) {
     JachwiTheme {
         val session by api.session.collectAsState()
         val sessionScope = rememberCoroutineScope()
-        LaunchedEffect(api) { api.restoreSession() }
+        LaunchedEffect(api) { api.bootstrapSession() }
         Surface(Modifier.fillMaxSize()) {
             when (val current = session) {
-                AuthSession.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
-                is AuthSession.LoggedOut -> LoginScreen(api, current.reason) { sessionScope.launch { api.restoreSession() } }
-                is AuthSession.Authenticated -> AuthenticatedApp(api, platform, current.member)
+                AuthSession.Loading -> Column(Modifier.fillMaxSize().testTag("session-loading"), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                    CircularProgressIndicator(); Spacer(Modifier.height(20.dp)); Text("기록을 불러올 준비를 하고 있어요.")
+                }
+                is AuthSession.LoggedOut -> SessionRecoveryScreen(current,
+                    onRetry = { sessionScope.launch { api.bootstrapSession() } },
+                    onStartNew = { sessionScope.launch { try { api.startNewSession() } catch (_: ApiException) { /* API publishes recovery state. */ } } })
+                is AuthSession.Authenticated -> key(current.member.id) { AuthenticatedApp(api, platform, current.member) }
             }
         }
     }
 }
 
-@Composable private fun LoginScreen(api: ApiClient, reason: String?, onRetrySession: () -> Unit) {
-    var nickname by rememberSaveable { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var showPassword by remember { mutableStateOf(false) }
-    val action = rememberAction()
+@Composable private fun SessionRecoveryScreen(session: AuthSession.LoggedOut, onRetry: () -> Unit, onStartNew: () -> Unit) {
+    var confirmNew by remember { mutableStateOf(false) }
     ScrollBody(PaddingValues()) {
         Spacer(Modifier.windowInsetsTopHeight(WindowInsets.safeDrawing))
         Spacer(Modifier.height(36.dp))
@@ -47,24 +44,22 @@ fun App(api: ApiClient, platform: PlatformServices) {
             Text("집", Modifier.padding(horizontal = 24.dp, vertical = 18.dp), style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Black)
         }
         Text("자취선배", style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.ExtraBold)
-        Text("좋은 집을 고르는 나만의 기준", style = MaterialTheme.typography.titleMedium)
-        Text("마음에 드는 집을 모으고, 직접 확인한 내용을 기록하고 비교해 보세요.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Spacer(Modifier.height(16.dp))
-        if (reason != null) Notice(reason, true)
-        if (reason != null) TextButton(enabled = !action.busy, onClick = onRetrySession) { Text("저장된 로그인 다시 확인") }
-        OutlinedTextField(value = nickname, onValueChange = { nickname = it.take(30) }, label = { Text("닉네임") }, singleLine = true, modifier = Modifier.fillMaxWidth().testTag("login-nickname"), enabled = !action.busy)
-        OutlinedTextField(value = password, onValueChange = { password = it }, label = { Text("비밀번호 (선택)") }, singleLine = true, modifier = Modifier.fillMaxWidth().testTag("login-password"), enabled = !action.busy,
-            isError = password.isNotEmpty() && password.length !in 4..30,
-            visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            trailingIcon = { TextButton(onClick = { showPassword = !showPassword }) { Text(if (showPassword) "숨김" else "보기") } })
-        Text("비밀번호를 설정한 닉네임은 같은 비밀번호를 입력해 주세요. 비밀번호는 4~30자입니다.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Notice("비밀번호 없이 시작하면 같은 닉네임을 아는 사람이 기록에 접근할 수 있어요.")
-        ActionNotice(action)
-        Button(onClick = { action.run { api.login(nickname.trim(), password.takeIf { it.isNotEmpty() }) } }, enabled = !action.busy && nickname.isNotBlank() && (password.isEmpty() || password.length in 4..30), modifier = Modifier.fillMaxWidth().height(52.dp)) {
-            Text(if (action.busy) "로그인 중…" else "시작하기")
+        Text(if (session.requiresNewSessionConfirmation) "이전 기록을 이어서 불러오지 못했어요" else "기록을 불러오지 못했어요", style = MaterialTheme.typography.titleLarge)
+        session.reason?.let { Notice(it, true) }
+        if (session.requiresNewSessionConfirmation) {
+            Text("이 앱에 남은 로그인 정보로 이전 기록에 접근할 수 없어요. 새로 시작하면 빈 기록으로 시작합니다.")
+            if (session.canRetry) OutlinedButton(onClick = onRetry, modifier = Modifier.fillMaxWidth().testTag("session-retry")) { Text("다시 시도하기") }
+            Button(onClick = { confirmNew = true }, modifier = Modifier.fillMaxWidth().testTag("session-start-new")) { Text("새 기록으로 시작하기") }
+        } else {
+            Text("연결을 확인한 뒤 다시 시도해 주세요. 일시적인 오류로 기존 기록을 새 기록으로 바꾸지 않습니다.")
+            Button(onClick = onRetry, modifier = Modifier.fillMaxWidth().testTag("session-retry")) { Text("다시 시도하기") }
         }
         Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.safeDrawing))
     }
+    if (confirmNew) AlertDialog(onDismissRequest = { confirmNew = false }, title = { Text("새 기록으로 시작할까요?") },
+        text = { Text("새 익명 회원의 빈 기록으로 시작합니다. 이 앱에서 이전 회원의 기록을 이어서 볼 수 없으며, 기존 기록을 삭제하는 작업은 아닙니다.") },
+        confirmButton = { TextButton(onClick = { confirmNew = false; onStartNew() }) { Text("새 기록 시작") } },
+        dismissButton = { TextButton(onClick = { confirmNew = false }) { Text("취소") } })
 }
 
 @Composable private fun AuthenticatedApp(api: ApiClient, platform: PlatformServices, member: MemberDto) {
@@ -84,12 +79,12 @@ fun App(api: ApiClient, platform: PlatformServices) {
             }, icon = { Text(icon, fontWeight = FontWeight.Bold) }, label = { Text(label) }) }
         }
     }) { insets ->
-        NavHost(navController = nav, startDestination = "properties", modifier = Modifier.padding(insets)) {
+        NavHost(navController = nav, startDestination = "properties", modifier = Modifier.padding(insets).consumeWindowInsets(insets)) {
             composable("properties") {
                 PropertyListScreen(api, revision, selected, onSelection = { id -> selected = if (id in selected) selected - id else if (selected.size < 5) selected + id else selected },
-                    onOpen = { navigate("property/$it") }, onCreate = { navigate("property/new") }, onCompare = { navigate("compare") })
+                    onOpen = { navigate("property/$it") }, onCreate = { navigate("property-create") }, onCompare = { navigate("compare") }, onAvailableIds = { available -> selected = selected.intersect(available) })
             }
-            composable("property/new") { PropertyEditorScreen(api, null, platform, onBack = back, onSaved = { id -> changed(); nav.popBackStack(); navigate("property/$id") }) }
+            composable("property-create") { PropertyEditorScreen(api, null, platform, onBack = back, onSaved = { id -> changed(); nav.popBackStack(); navigate("property/$id") }) }
             composable("property/{id}") { route ->
                 route.arguments?.read { getString("id") }?.toLongOrNull()?.let { id -> PropertyDetailScreen(api, platform, id, revision, onBack = back,
                     onEdit = { navigate("property/$id/edit") }, onChecklist = { navigate("property/$id/checklist/${it.name}") },
@@ -105,26 +100,27 @@ fun App(api: ApiClient, platform: PlatformServices) {
             }
             composable("compare") { ComparisonScreen(api, platform, selected.toList(), revision, onBack = back) }
             composable("map") { MapScreen(api, platform, revision, onOpen = { navigate("property/$it") }) }
-            composable("templates") { TemplateListScreen(api, revision, onOpen = { navigate("template/$it") }, onCreate = { navigate("template/new") }) }
-            composable("template/new") { TemplateEditorScreen(api, null, back, onSaved = { changed(); back() }) }
+            composable("templates") { TemplateListScreen(api, revision, onOpen = { navigate("template/$it") }, onCreate = { navigate("template-create") }) }
+            composable("template-create") { TemplateEditorScreen(api, null, back, onSaved = { changed(); back() }) }
             composable("template/{id}") { route -> route.arguments?.read { getString("id") }?.toLongOrNull()?.let { id -> TemplateEditorScreen(api, id, back, onSaved = { changed(); back() }) } }
-            composable("profile") { ProfileScreen(api, member) }
+            composable("profile") { ProfileScreen(member, onNavigate = { route ->
+                nav.navigate(route) { popUpTo("properties") { saveState = true }; launchSingleTop = true; restoreState = true }
+            }) }
         }
     }
 }
 
-@Composable private fun ProfileScreen(api: ApiClient, member: MemberDto) {
-    val action = rememberAction()
-    var confirm by remember { mutableStateOf(false) }
+@Composable private fun ProfileScreen(member: MemberDto, onNavigate: (String) -> Unit) {
     Page("마이") { padding -> ScrollBody(padding) {
-        Text("${member.name}님", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-        Text(if (member.passwordProtected) "비밀번호로 보호된 계정" else "비밀번호 없는 공유 기록 공간", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text("차근차근, 나에게 맞는 집을 찾아보세요.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-        SectionTitle("자취선배 모바일")
-        Notice("매물과 체크리스트는 기존 자취선배 계정에 저장됩니다. 로그아웃하면 이 기기의 로그인 정보가 삭제됩니다.")
-        ActionNotice(action)
-        OutlinedButton(onClick = { confirm = true }, enabled = !action.busy, modifier = Modifier.fillMaxWidth()) { Text("로그아웃") }
+        Text("익명 회원", modifier = Modifier.testTag("anonymous-member"), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+        Text("로그인 없이 이 앱에서 기록이 이어져요.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Notice("다른 기기나 브라우저에서는 별도의 기록으로 시작합니다. 이 앱의 로그인 정보가 지워지거나 만료되면 이전 기록을 이어서 불러오지 못할 수 있어요.")
+        SectionTitle("내 기록")
+        listOf("properties" to "내 매물 관리", "templates" to "내 체크리스트 관리", "map" to "지도와 주변 시설").forEach { (route, title) ->
+            OutlinedButton(onClick = { onNavigate(route) }, modifier = Modifier.fillMaxWidth()) { Text(title) }
+        }
+        SectionTitle("이렇게 사용해 보세요")
+        Text("1. 내 매물에 후보를 등록해요.\n2. 집을 방문하며 체크 결과와 사진을 남겨요.\n3. 2~5개를 선택해 비교하고 PDF로 저장해요.", style = MaterialTheme.typography.bodyMedium)
+        Text("회원 번호 ${member.id}", modifier = Modifier.testTag("anonymous-member-id"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     } }
-    if (confirm) AlertDialog(onDismissRequest = { confirm = false }, title = { Text("로그아웃할까요?") }, text = { Text("저장된 매물은 유지되며 다음에 다시 로그인할 수 있어요.") },
-        confirmButton = { TextButton(onClick = { confirm = false; action.run { api.logout() } }) { Text("로그아웃") } }, dismissButton = { TextButton(onClick = { confirm = false }) { Text("취소") } })
 }

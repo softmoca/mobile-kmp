@@ -6,6 +6,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import kr.jachwisunbae.app.data.*
@@ -37,7 +38,7 @@ import kr.jachwisunbae.app.platform.*
     val action = rememberAction()
     ScrollBody(padding) {
         SectionTitle("기본 정보", "금액은 원 단위로 입력해 주세요. 미확정 금액은 0으로 기록할 수 있어요.")
-        OutlinedTextField(name, { if (it.length <= 30) name = it }, label = { Text("매물 이름 *") }, singleLine = true, modifier = Modifier.fillMaxWidth(), supportingText = { Text("${name.length} / 30") })
+        OutlinedTextField(name, { if (it.length <= 30) name = it }, label = { Text("매물 이름 *") }, singleLine = true, modifier = Modifier.fillMaxWidth().testTag("property-name-input"), supportingText = { Text("${name.length} / 30") })
         AmountField("보증금 (원) *", deposit) { deposit = it }
         AmountField("월세 (원) *", rent) { rent = it }
         AmountField("관리비 (원)", maintenance) { maintenance = it }
@@ -50,7 +51,7 @@ import kr.jachwisunbae.app.platform.*
         AddressPicker(api, platform, latitude?.let { lat -> longitude?.let { lon -> Coordinates(lat, lon) } }) { found ->
             address = found.roadAddress ?: found.jibunAddress.orEmpty(); latitude = found.latitude; longitude = found.longitude
         }
-        OutlinedTextField(address, { address = it.take(255); latitude = null; longitude = null }, label = { Text("주소") }, modifier = Modifier.fillMaxWidth(), supportingText = { Text(if (latitude == null) "직접 입력한 주소는 좌표가 없어 지도에 표시되지 않아요." else "선택한 주소의 좌표가 함께 저장됩니다.") })
+        OutlinedTextField(address, { address = it.take(255); latitude = null; longitude = null }, label = { Text("주소") }, modifier = Modifier.fillMaxWidth().testTag("property-address-input"), supportingText = { Text(if (latitude == null) "직접 입력한 주소는 좌표가 없어 지도에 표시되지 않아요." else "선택한 주소의 좌표가 함께 저장됩니다.") })
         if (latitude != null) Text("위도 $latitude · 경도 $longitude", style = MaterialTheme.typography.bodySmall)
         HorizontalDivider()
         SectionTitle("추가 정보")
@@ -63,7 +64,7 @@ import kr.jachwisunbae.app.platform.*
         }
         validation?.let { Notice(it, true) }
         ActionNotice(action)
-        Button(enabled = !action.busy, modifier = Modifier.fillMaxWidth().height(52.dp), onClick = {
+        Button(enabled = !action.busy, modifier = Modifier.fillMaxWidth().height(52.dp).testTag("property-submit"), onClick = {
             val depositAmount = deposit.toLongOrNull(); val monthlyAmount = rent.toLongOrNull(); val fee = maintenance.takeIf { it.isNotBlank() }?.toLongOrNull()
             when {
                 name.isBlank() -> validation = "매물 이름을 입력해 주세요."
@@ -95,8 +96,8 @@ import kr.jachwisunbae.app.platform.*
     val action = rememberAction()
     var mapVisible by rememberSaveable { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        OutlinedTextField(query, { query = it }, label = { Text("주소 검색") }, singleLine = true, modifier = Modifier.fillMaxWidth(), trailingIcon = {
-            TextButton(enabled = !action.busy && query.isNotBlank(), onClick = { action.run { results = api.geocode(query.trim()) } }) { Text("검색") }
+        OutlinedTextField(query, { query = it; results = null; action.clear() }, label = { Text("주소 검색") }, singleLine = true, modifier = Modifier.fillMaxWidth(), trailingIcon = {
+            TextButton(enabled = !action.busy && query.isNotBlank(), onClick = { val submitted = query.trim(); action.run { val found = api.geocode(submitted); if (query.trim() == submitted) results = found } }) { Text("검색") }
         })
         ActionNotice(action)
         results?.let { addresses ->

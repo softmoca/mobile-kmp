@@ -3,7 +3,7 @@ package kr.jachwisunbae.app.data
 import kotlinx.serialization.Serializable
 
 @Serializable
-enum class MapCategory { HOSPITAL, TRANSPORT, SCHOOL, CONVENIENCE, AGENCY }
+enum class MapCategory { HOSPITAL, SCHOOL, CONVENIENCE, TRANSPORT, AGENCY }
 
 @Serializable
 data class CoordinateDto(val latitude: Double, val longitude: Double)
@@ -35,4 +35,21 @@ data class NearbyDto(
     val radius: Int,
     val counts: Map<MapCategory, Int>,
     val places: List<NearbyPlaceDto>,
+)
+
+@Serializable
+data class BusStopDto(
+    val nodeId: String,
+    val name: String,
+    val latitude: Double,
+    val longitude: Double,
+    val distanceMeters: Int,
+)
+
+@Serializable
+data class BusStopsDto(
+    val center: CoordinateDto,
+    val radius: Int,
+    val count: Int,
+    val busStops: List<BusStopDto>,
 )

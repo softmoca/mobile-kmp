@@ -10,14 +10,6 @@ import kotlin.test.assertTrue
 
 class InputValidationTest {
     @Test
-    fun nicknameTrimsButPasswordRetainsSpaces() {
-        assertTrue(InputValidation.login("  테스터  ", "    ").isEmpty())
-        assertTrue(InputValidation.login("테스터", "").isEmpty())
-        assertEquals("nickname", InputValidation.login(" ", null).single().field)
-        assertEquals("password", InputValidation.login("테스터", "123").single().field)
-    }
-
-    @Test
     fun datesRejectImpossibleCalendarDatesAndTimezoneSuffixes() {
         assertTrue(InputValidation.isDate("2028-02-29"))
         assertTrue(InputValidation.isDate("2000-02-29"))

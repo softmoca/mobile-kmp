@@ -14,7 +14,7 @@ import androidx.compose.ui.unit.dp
 import kr.jachwisunbae.app.data.*
 
 @Composable internal fun TemplateListScreen(api: ApiClient, revision: Int, onOpen: (Long) -> Unit, onCreate: () -> Unit) {
-    val templates = rememberLoad(revision) { api.userChecklists() }
+    val templates = rememberRefreshLoad("templates", revision) { api.userChecklists() }
     Page("체크리스트", actions = { TextButton(onClick = templates::reload) { Text("새로고침") }; TextButton(onClick = onCreate) { Text("+ 만들기") } }) { padding ->
         Resource(templates) { result -> LazyColumn(Modifier.fillMaxSize().padding(padding), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             item { SectionTitle("나에게 필요한 항목만", "기본 항목을 골라 집을 볼 때마다 사용할 나만의 목록을 만드세요.") }
@@ -113,7 +113,7 @@ import kr.jachwisunbae.app.data.*
             }
         }
     }
-    if (confirmDelete && initial != null) ConfirmDelete("체크리스트를 삭제할까요?", "삭제한 목록은 새 매물에 적용할 수 없어요. 기존 매물에 적용된 기록은 유지됩니다.", action.busy, { confirmDelete = false }) {
+    if (confirmDelete && initial != null) ConfirmDelete("체크리스트를 삭제할까요?", "삭제한 목록은 새 매물에 적용할 수 없어요. 기존 매물에 적용된 기록은 유지됩니다.", action.busy, { confirmDelete = false }, error = action.error) {
         action.run { api.deleteUserChecklist(initial.id); confirmDelete = false; onSaved() }
     }
 }

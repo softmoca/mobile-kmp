@@ -5,13 +5,17 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -21,30 +25,40 @@ import kotlinx.coroutines.withContext
 import kr.jachwisunbae.app.data.*
 import kr.jachwisunbae.app.platform.*
 
-@Composable internal fun PropertyListScreen(api: ApiClient, revision: Int, selected: Set<Long>, onSelection: (Long) -> Unit, onOpen: (Long) -> Unit, onCreate: () -> Unit, onCompare: () -> Unit) {
-    val properties = rememberLoad(revision) { api.properties() }
+@Composable internal fun PropertyListScreen(api: ApiClient, revision: Int, selected: Set<Long>, onSelection: (Long) -> Unit, onOpen: (Long) -> Unit, onCreate: () -> Unit, onCompare: () -> Unit, onAvailableIds: (Set<Long>) -> Unit) {
+    val properties = rememberRefreshLoad("properties", revision) { api.properties() }
     var query by rememberSaveable { mutableStateOf("") }
+    var filter by rememberSaveable { mutableStateOf(RecordFilter.ALL) }
+    val scroll = rememberLazyListState()
+    LaunchedEffect(query, filter) { scroll.scrollToItem(0) }
     Page("내 매물", actions = { TextButton(onClick = properties::reload) { Text("새로고침") }; TextButton(onClick = onCreate) { Text("+ 등록") } }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
-            OutlinedTextField(query, { query = it }, label = { Text("이름 또는 주소 검색") }, singleLine = true, modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp))
+            OutlinedTextField(query, { query = it }, label = { Text("이름 또는 주소 검색") }, singleLine = true, modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).testTag("property-search"))
+            Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                RecordFilter.entries.forEach { option -> FilterChip(selected = filter == option, onClick = { filter = option }, label = { Text(option.label) }) }
+            }
             Resource(properties) { result ->
-                val visible = result.items.filter { query.isBlank() || it.name.contains(query, ignoreCase = true) || it.address.orEmpty().contains(query, ignoreCase = true) }
-                LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                    item { Text("${result.totalCount}개의 기록 · 비교할 매물을 2~5개 선택하세요", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                LaunchedEffect(result.items) { onAvailableIds(result.items.map { it.id }.toSet()) }
+                val visible = result.items.filter { matchesRecord(it, query, filter) }
+                LazyColumn(Modifier.weight(1f).testTag("property-list"), state = scroll, contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                    item { Text("${visible.size} / ${result.totalCount}개의 기록 · 비교할 매물을 2~5개 선택하세요", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                     if (result.items.isEmpty()) item { EmptyState("첫 번째 집을 기록해 보세요", "방을 보러 가기 전 기본 정보를 남겨두세요.", "매물 등록", onCreate) }
-                    else if (visible.isEmpty()) item { EmptyState("검색 결과가 없어요", "다른 이름이나 주소로 검색해 보세요.") }
+                    else if (visible.isEmpty()) item { EmptyState("조건에 맞는 기록이 없어요", "검색어나 확인 상태를 바꿔보세요.", "조건 초기화", { query = ""; filter = RecordFilter.ALL }) }
                     items(visible, key = { it.id }) { property ->
                         OutlinedCard(Modifier.fillMaxWidth()) {
-                            Column(Modifier.clickable { onOpen(property.id) }.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Column(Modifier.testTag("property-row-${property.id}").clickable { onOpen(property.id) }.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                     Column(Modifier.weight(1f)) {
-                                        Text(property.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                                        Text(property.address ?: "주소 미입력", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        Text(property.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                        Text(property.address?.takeIf { it.isNotBlank() } ?: "주소 미입력", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
                                     }
-                                    Checkbox(checked = property.id in selected, enabled = property.id in selected || selected.size < 5, onCheckedChange = { onSelection(property.id) })
+                                    Checkbox(modifier = Modifier.semantics { contentDescription = "${property.name} 비교 ${if (property.id in selected) "선택됨" else "선택"}" }, checked = property.id in selected, enabled = property.id in selected || selected.size < 5, onCheckedChange = { onSelection(property.id) })
                                 }
                                 property.representativePhoto?.let { PhotoImage(api, property.id, it.id, property.name, Modifier.fillMaxWidth().height(150.dp)) }
-                                Text("보증금 ${money(property.depositAmount)}  /  월세 ${money(property.monthlyRentAmount)}", style = MaterialTheme.typography.bodyMedium)
+                                    ?: PhotoPlaceholder(Modifier.fillMaxWidth().height(110.dp))
+                                InfoRow("보증금", money(property.depositAmount))
+                                InfoRow("월세", money(property.monthlyRentAmount))
+                                if (property.id in selected) Text("비교 ${selected.indexOf(property.id) + 1}번째", style = MaterialTheme.typography.labelMedium)
                                 Progress(property.overallProgress)
                             }
                         }
@@ -59,7 +73,7 @@ import kr.jachwisunbae.app.platform.*
 }
 
 @Composable internal fun PropertyDetailScreen(api: ApiClient, platform: PlatformServices, id: Long, revision: Int, onBack: () -> Unit, onEdit: () -> Unit, onChecklist: (CheckStage) -> Unit, onDeleted: () -> Unit, onChanged: () -> Unit) {
-    val property = rememberLoad(id, revision) { api.property(id) }
+    val property = rememberRefreshLoad(id, revision) { api.property(id) }
     val action = rememberAction()
     var tab by rememberSaveable { mutableStateOf(0) }
     var confirmDelete by remember { mutableStateOf(false) }
@@ -69,8 +83,10 @@ import kr.jachwisunbae.app.platform.*
             Resource(property) { detail ->
                 when (tab) {
                     0 -> ScrollBody(PaddingValues()) {
-                        Text(detail.name, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                        Text(detail.address ?: "주소가 등록되지 않았어요", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        detail.representativePhoto?.let { PhotoImage(api, id, it.id, detail.name, Modifier.fillMaxWidth().height(200.dp)) }
+                            ?: PhotoPlaceholder(Modifier.fillMaxWidth().height(110.dp))
+                        Text(detail.name, modifier = Modifier.testTag("property-detail-name"), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                        Text(detail.address ?: "주소가 등록되지 않았어요", modifier = Modifier.testTag("property-detail-address"), color = MaterialTheme.colorScheme.onSurfaceVariant)
                         OutlinedCard { Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             InfoRow("보증금", money(detail.depositAmount)); InfoRow("월세", money(detail.monthlyRentAmount)); InfoRow("관리비", money(detail.maintenanceFeeAmount))
                             InfoRow("관리비 포함", detail.utilityOptions.mapNotNull { UtilityOptions[it] }.joinToString(", ").ifBlank { "미입력" })
@@ -85,7 +101,7 @@ import kr.jachwisunbae.app.platform.*
                             NativeMap(markers = listOf(MapMarker(id.toString(), detail.name, detail.latitude, detail.longitude)), selectedLocation = Coordinates(detail.latitude, detail.longitude), onLocationSelected = {}, modifier = Modifier.fillMaxWidth().height(230.dp))
                         }
                         ActionNotice(action)
-                        OutlinedButton(onClick = { confirmDelete = true }, enabled = !action.busy, modifier = Modifier.fillMaxWidth()) { Text("매물 삭제", color = MaterialTheme.colorScheme.error) }
+                        OutlinedButton(onClick = { confirmDelete = true }, enabled = !action.busy, modifier = Modifier.fillMaxWidth().testTag("property-delete")) { Text("매물 삭제", color = MaterialTheme.colorScheme.error) }
                     }
                     1 -> ChecklistOverview(api, id, revision, onChecklist)
                     2 -> PropertyPhotos(api, platform, id, onChanged)
@@ -94,7 +110,7 @@ import kr.jachwisunbae.app.platform.*
             }
         }
     }
-    if (confirmDelete) ConfirmDelete("매물을 삭제할까요?", "매물의 사진, 체크 결과와 메모도 함께 삭제됩니다. 복구할 수 없어요.", action.busy, { confirmDelete = false }) {
+    if (confirmDelete) ConfirmDelete("매물을 삭제할까요?", "매물의 사진, 체크 결과와 메모도 함께 삭제됩니다. 복구할 수 없어요.", action.busy, { confirmDelete = false }, error = action.error) {
         action.run { api.deleteProperty(id); confirmDelete = false; onDeleted() }
     }
 }
@@ -114,7 +130,7 @@ import kr.jachwisunbae.app.platform.*
     Surface(modifier, color = MaterialTheme.colorScheme.surfaceVariant, shape = MaterialTheme.shapes.medium) {
         when {
             image.loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(Modifier.size(28.dp)) }
-            image.error != null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { TextButton(onClick = image::reload) { Text("사진 다시 불러오기") } }
+            image.error != null -> Column(Modifier.fillMaxSize().padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) { Text("사진을 불러오지 못했어요", style = MaterialTheme.typography.bodySmall); TextButton(onClick = image::reload) { Text("다시 불러오기") } }
             else -> image.value?.let { Image(it, label, Modifier.fillMaxSize(), contentScale = contentScale) }
         }
     }
@@ -150,7 +166,7 @@ import kr.jachwisunbae.app.platform.*
             }
         }
     }
-    pendingDelete?.let { photoId -> ConfirmDelete("사진을 삭제할까요?", "선택한 사진은 복구할 수 없어요.", action.busy, { pendingDelete = null }) {
+    pendingDelete?.let { photoId -> ConfirmDelete("사진을 삭제할까요?", "선택한 사진은 복구할 수 없어요.", action.busy, { pendingDelete = null }, error = action.error) {
         action.run("사진을 삭제했어요.") { api.deletePhoto(propertyId, photoId); pendingDelete = null; photos.reload(); onChanged() }
     } }
     preview?.let { photoId -> Dialog(onDismissRequest = { preview = null }, properties = DialogProperties(usePlatformDefaultWidth = false)) {
@@ -166,12 +182,21 @@ import kr.jachwisunbae.app.platform.*
     val memo = rememberLoad(propertyId) { api.memo(propertyId) }
     val action = rememberAction()
     Resource(memo) { document ->
-        var draft by rememberSaveable(propertyId, document.freeMemo) { mutableStateOf(document.freeMemo) }
+        var draft by rememberSaveable(propertyId) { mutableStateOf(document.freeMemo) }
         ScrollBody(PaddingValues()) {
             SectionTitle("자유 메모", "방의 첫인상부터 중개사와 나눈 이야기까지 남겨보세요.")
-            OutlinedTextField(draft, { if (it.length <= 2000) draft = it }, label = { Text("매물 메모") }, minLines = 10, modifier = Modifier.fillMaxWidth(), supportingText = { Text("${draft.length} / 2000") })
+            OutlinedTextField(draft, { if (it.length <= 2000) draft = it }, label = { Text("매물 메모") }, minLines = 10, modifier = Modifier.fillMaxWidth().testTag("property-memo-input"), enabled = !action.busy, supportingText = { Text("${draft.length} / 2000") })
             ActionNotice(action)
-            Button(enabled = !action.busy && draft != document.freeMemo, modifier = Modifier.fillMaxWidth(), onClick = { action.run("메모를 저장했어요.") { api.saveMemo(propertyId, draft); memo.reload() } }) { Text("메모 저장") }
+            Button(enabled = !action.busy && draft != document.freeMemo, modifier = Modifier.fillMaxWidth().testTag("property-memo-save"), onClick = { action.run("메모를 저장했어요.") { memo.replace(api.saveMemo(propertyId, draft)) } }) { Text("메모 저장") }
+        }
+    }
+}
+
+@Composable internal fun PhotoPlaceholder(modifier: Modifier = Modifier) {
+    Surface(modifier, color = MaterialTheme.colorScheme.surfaceVariant, shape = MaterialTheme.shapes.medium) {
+        Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+            Text("집", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("등록한 사진이 없어요", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

@@ -12,13 +12,6 @@ object InputValidation {
     )
     val utilityOptions = setOf("WATER", "ELECTRICITY", "GAS", "INTERNET")
 
-    fun login(nickname: String, password: String?): List<FieldErrorDto> = buildList {
-        if (nickname.trim().length !in 1..30) add(FieldErrorDto("nickname", "닉네임은 1~30자로 입력해 주세요."))
-        if (!password.isNullOrEmpty() && password.length !in 4..30) {
-            add(FieldErrorDto("password", "비밀번호는 4~30자로 입력해 주세요."))
-        }
-    }
-
     fun property(input: PropertyInput): List<FieldErrorDto> = buildList {
         if (input.name.isBlank() || input.name.length > 30) add(FieldErrorDto("name", "매물 이름은 1~30자로 입력해 주세요."))
         if (input.depositAmount < 0) add(FieldErrorDto("depositAmount", "보증금은 0원 이상이어야 합니다."))

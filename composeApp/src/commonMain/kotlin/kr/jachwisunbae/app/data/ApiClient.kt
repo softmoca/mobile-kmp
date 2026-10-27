@@ -1,13 +1,10 @@
 package kr.jachwisunbae.app.data
 
 import io.ktor.client.HttpClient
-import io.ktor.client.plugins.expectSuccess
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.forms.MultiPartFormDataContent
 import io.ktor.client.request.forms.formData
-import io.ktor.client.request.header
 import io.ktor.client.request.parameter
-import io.ktor.client.request.request
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsBytes
@@ -18,14 +15,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.Url
 import io.ktor.http.content.TextContent
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -39,11 +29,8 @@ class ApiClient(
 ) {
     private val baseUrl = baseUrl.trimEnd('/')
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
-    private val mutableSession = MutableStateFlow<AuthSession>(AuthSession.Loading)
-    val session: StateFlow<AuthSession> = mutableSession.asStateFlow()
-    private val token = MutableStateFlow<String?>(null)
-    private val sessionMutex = Mutex()
-    private var sessionRevision = 0L
+    private val sessions = SessionManager(client, tokenStore, this.baseUrl, json)
+    val session: StateFlow<AuthSession> = sessions.session
 
     init {
         val url = Url(this.baseUrl)
@@ -53,64 +40,12 @@ class ApiClient(
         require(url.encodedPath in listOf("", "/") && url.parameters.isEmpty() && url.fragment.isEmpty())
     }
 
-    suspend fun restoreSession() {
-        var revision = -1L
-        try {
-            val saved = sessionMutex.withLock {
-                revision = ++sessionRevision
-                mutableSession.value = AuthSession.Loading
-                token.value = null
-                storage { tokenStore.read() }?.takeIf { it.isNotBlank() }.also { token.value = it }
-            }
-            if (saved == null) {
-                sessionMutex.withLock {
-                    if (revision == sessionRevision) mutableSession.value = AuthSession.LoggedOut()
-                }
-                return
-            }
-            val member = member()
-            sessionMutex.withLock {
-                if (revision == sessionRevision && token.value == saved) mutableSession.value = AuthSession.Authenticated(member)
-            }
-        } catch (error: ApiException) {
-            // 일시적인 연결 실패는 저장된 토큰을 지우지 않아 다시 확인할 수 있다.
-            sessionMutex.withLock {
-                if (revision == sessionRevision) mutableSession.value = AuthSession.LoggedOut(error.message)
-            }
-        }
-    }
-
-    suspend fun login(nickname: String, password: String? = null): LoginDto {
-        InputValidation.requireValid(InputValidation.login(nickname, password))
-        val result = jsonRequest<LoginDto>("/api/auth/nickname", HttpMethod.Post, authenticated = false) {
-            jsonBody(LoginRequest(nickname.trim(), password?.takeIf { it.isNotEmpty() }))
-        }
-        if (!result.tokenType.equals("Bearer", ignoreCase = true) || result.accessToken.isBlank() || result.expiresIn <= 0) {
-            throw invalidResponse()
-        }
-        sessionMutex.withLock {
-            storage { tokenStore.write(result.accessToken) }
-            sessionRevision++
-            token.value = result.accessToken
-            mutableSession.value = AuthSession.Authenticated(MemberDto(result.member.memberId, result.member.name, result.member.passwordProtected))
-        }
-        return result
-    }
-
-    suspend fun logout() = sessionMutex.withLock {
-        // 화면 전환이 호출 코루틴을 취소해도 보안 저장소 제거를 끝낸 뒤 로그인 화면으로 전환한다.
-        withContext(NonCancellable) {
-            sessionRevision++
-            token.value = null
-            try {
-                storage { tokenStore.clear() }
-                mutableSession.value = AuthSession.LoggedOut()
-            } catch (error: ApiException) {
-                mutableSession.value = AuthSession.LoggedOut(error.message)
-                throw error
-            }
-        }
-    }
+    suspend fun bootstrapSession() = sessions.bootstrapSession()
+    suspend fun restoreSession() = sessions.restoreSession()
+    suspend fun login(): LoginDto = sessions.login()
+    suspend fun startNewSession(): LoginDto = sessions.startNewSession()
+    suspend fun refresh(): LoginDto = sessions.refresh()
+    suspend fun logout() = sessions.logout()
 
     suspend fun member(): MemberDto = jsonRequest("/api/members/me")
     suspend fun properties(): PropertyListDto = jsonRequest("/api/properties")
@@ -229,10 +164,38 @@ class ApiClient(
     suspend fun nearby(latitude: Double, longitude: Double, radius: Int = 500, categories: List<MapCategory> = emptyList()): NearbyDto {
         validateCoordinates(latitude, longitude)
         if (radius !in setOf(500, 1000, 2000)) throw ApiException(400, "CLIENT_VALIDATION", "반경은 500m, 1km, 2km 중 선택해 주세요.")
-        return jsonRequest("/api/maps/nearby") {
-            parameter("latitude", latitude); parameter("longitude", longitude); parameter("radius", radius)
-            if (categories.isNotEmpty()) parameter("categories", categories.distinct().joinToString(",") { it.name })
+        val selected = categories.ifEmpty { MapCategory.entries.toList() }.distinct()
+        val ordinary = selected.filter { it != MapCategory.TRANSPORT }
+        val nearby: NearbyDto = if (ordinary.isEmpty()) {
+            NearbyDto(CoordinateDto(latitude, longitude), radius, emptyMap(), emptyList())
+        } else {
+            jsonRequest("/api/maps/nearby") {
+                parameter("latitude", latitude); parameter("longitude", longitude); parameter("radius", radius)
+                parameter("categories", ordinary.joinToString(",") { it.name })
+            }
         }
+        if (MapCategory.TRANSPORT !in selected) return nearby
+        val transport = busStops(latitude, longitude, radius)
+        return nearby.copy(
+            counts = nearby.counts + (MapCategory.TRANSPORT to transport.count),
+            places = nearby.places + transport.busStops.map { stop ->
+                NearbyPlaceDto(stop.nodeId, stop.name, MapCategory.TRANSPORT, "", stop.latitude, stop.longitude, stop.distanceMeters)
+            },
+        )
+    }
+
+    suspend fun busStops(latitude: Double, longitude: Double, radius: Int = 500): BusStopsDto {
+        validateCoordinates(latitude, longitude)
+        if (radius !in setOf(500, 1000, 2000)) throw ApiException(400, "CLIENT_VALIDATION", "반경은 500m, 1km, 2km 중 선택해 주세요.")
+        val result: BusStopsDto = jsonRequest("/api/maps/bus-stops") {
+            parameter("latitude", latitude); parameter("longitude", longitude); parameter("radius", radius)
+        }
+        if (result.radius != radius || result.count != result.busStops.size ||
+            result.busStops.map { it.nodeId }.distinct().size != result.count ||
+            result.busStops.any { it.nodeId.isBlank() || it.name.isBlank() || it.distanceMeters < 0 ||
+                !it.latitude.isFinite() || it.latitude !in -90.0..90.0 ||
+                !it.longitude.isFinite() || it.longitude !in -180.0..180.0 }) throw invalidResponse()
+        return result
     }
 
     suspend fun comparisonPdf(propertyIds: List<Long>): ByteArray {
@@ -283,60 +246,7 @@ class ApiClient(
         method: HttpMethod = HttpMethod.Get,
         authenticated: Boolean = true,
         configure: HttpRequestBuilder.() -> Unit = {},
-    ): HttpResponse {
-        val sentToken = if (authenticated) token.value ?: throw ApiException(401, "AUTH_REQUIRED", "로그인이 필요합니다.") else null
-        val response = try {
-            client.request(baseUrl + path) {
-                this.method = method
-                expectSuccess = false
-                sentToken?.let { header(HttpHeaders.Authorization, "Bearer $it") }
-                configure()
-            }
-        } catch (cancelled: CancellationException) {
-            throw cancelled
-        } catch (error: Exception) {
-            throw ApiException(0, "NETWORK_ERROR", "서버에 연결하지 못했습니다. 네트워크를 확인하고 다시 시도해 주세요.", cause = error)
-        }
-        if (response.status.value in 200..299) return response
-        if (response.status.value == 401 && sentToken != null) expireSession(sentToken)
-        val error = try { json.decodeFromString<ErrorEnvelope>(response.bodyAsText()) } catch (_: SerializationException) { null }
-        throw ApiException(
-            response.status.value,
-            error?.code ?: "HTTP_${response.status.value}",
-            error?.message?.takeIf { it.isNotBlank() } ?: when (response.status.value) {
-                401 -> "로그인이 만료되었습니다. 다시 로그인해 주세요."
-                403 -> "이 정보에 접근할 권한이 없습니다."
-                404 -> "요청한 정보를 찾을 수 없습니다."
-                else -> "요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요."
-            },
-            error?.errors ?: emptyList(),
-        )
-    }
-
-    private suspend fun expireSession(sentToken: String) = sessionMutex.withLock {
-        // 이전 요청의 401이 새 로그인 세션까지 지우지 않도록 요청 당시 토큰을 비교한다.
-        if (token.value == sentToken) {
-            withContext(NonCancellable) {
-                sessionRevision++
-                token.value = null
-                try {
-                    storage { tokenStore.clear() }
-                    mutableSession.value = AuthSession.LoggedOut("로그인이 만료되었습니다. 다시 로그인해 주세요.")
-                } catch (error: ApiException) {
-                    mutableSession.value = AuthSession.LoggedOut(error.message)
-                    throw error
-                }
-            }
-        }
-    }
-
-    private suspend fun <T> storage(operation: suspend () -> T): T = try {
-        operation()
-    } catch (cancelled: CancellationException) {
-        throw cancelled
-    } catch (error: Exception) {
-        throw ApiException(0, "SECURE_STORAGE_ERROR", "보안 저장소를 사용할 수 없습니다. 다시 시도해 주세요.", cause = error)
-    }
+    ): HttpResponse = sessions.request(path, method, authenticated, configure)
 
     private inline fun <reified T> HttpRequestBuilder.jsonBody(value: T) {
         setBody(TextContent(json.encodeToString(value), ContentType.Application.Json))

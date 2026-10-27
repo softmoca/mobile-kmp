@@ -35,7 +35,7 @@ internal suspend fun <T> fetchCurrentNearby(request: NearbyQuery, current: () ->
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable internal fun MapScreen(api: ApiClient, platform: PlatformServices, revision: Int, onOpen: (Long) -> Unit) {
-    val properties = rememberLoad(revision) { api.properties() }
+    val properties = rememberRefreshLoad("map-properties", revision) { api.properties() }
     var selected by remember { mutableStateOf<Coordinates?>(null) }
     var nearby by remember { mutableStateOf<NearbyDto?>(null) }
     var radius by rememberSaveable { mutableStateOf(500) }
@@ -45,8 +45,8 @@ internal suspend fun <T> fetchCurrentNearby(request: NearbyQuery, current: () ->
     val action = rememberAction()
     Page("지도", actions = { TextButton(onClick = properties::reload) { Text("새로고침") } }) { padding ->
         LazyColumn(Modifier.fillMaxSize().padding(padding), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            item { OutlinedTextField(query, { query = it }, label = { Text("주소 검색") }, singleLine = true, modifier = Modifier.fillMaxWidth(), trailingIcon = {
-                TextButton(enabled = !action.busy && query.isNotBlank(), onClick = { action.run { addresses = api.geocode(query.trim()) } }) { Text("검색") }
+            item { OutlinedTextField(query, { query = it; addresses = null; action.clear() }, label = { Text("주소 검색") }, singleLine = true, modifier = Modifier.fillMaxWidth(), trailingIcon = {
+                TextButton(enabled = !action.busy && query.isNotBlank(), onClick = { val submitted = query.trim(); action.run { val found = api.geocode(submitted); if (query.trim() == submitted) addresses = found } }) { Text("검색") }
             }) }
             item { ActionNotice(action) }
             addresses?.let { found ->
@@ -58,14 +58,14 @@ internal suspend fun <T> fetchCurrentNearby(request: NearbyQuery, current: () ->
             item {
                 val markers = properties.value?.items.orEmpty().mapNotNull { property ->
                     property.latitude?.let { latitude -> property.longitude?.let { longitude -> MapMarker("property:${property.id}", property.name, latitude, longitude) } }
-                } + nearby?.places.orEmpty().map { MapMarker("place:${it.providerPlaceId}", it.name, it.latitude, it.longitude) }
-                NativeMap(markers, selected, onLocationSelected = { selected = it; nearby = null }, modifier = Modifier.fillMaxWidth().height(330.dp))
+                } + nearby?.places.orEmpty().map { MapMarker("place:${it.category}:${it.providerPlaceId}", it.name, it.latitude, it.longitude) }
+                NativeMap(markers, selected, onLocationSelected = { selected = it; nearby = null; action.clear() }, modifier = Modifier.fillMaxWidth().height(330.dp))
             }
             item { OutlinedButton(enabled = !action.busy, onClick = { action.run { selected = platform.currentLocation(); nearby = null } }, modifier = Modifier.fillMaxWidth()) { Text("현재 위치로 이동") } }
             item { SectionTitle("주변 생활 편의시설", "지도 또는 등록 매물에서 기준 위치를 선택해 주세요.") }
-            item { Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { listOf(500, 1000, 2000).forEach { value -> FilterChip(selected = radius == value, onClick = { radius = value; nearby = null }, label = { Text(if (value < 1000) "500m" else "${value / 1000}km") }) } } }
+            item { Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { listOf(500, 1000, 2000).forEach { value -> FilterChip(selected = radius == value, onClick = { radius = value; nearby = null; action.clear() }, label = { Text(if (value < 1000) "500m" else "${value / 1000}km") }) } } }
             item { FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                MapCategory.entries.forEach { category -> FilterChip(selected = category in categories, onClick = { categories = if (category in categories) emptySet() else setOf(category); nearby = null }, label = { Text(category.label()) }) }
+                MapCategory.entries.forEach { category -> FilterChip(selected = category in categories, onClick = { categories = if (category in categories) emptySet() else setOf(category); nearby = null; action.clear() }, label = { Text(category.label()) }) }
             } }
             item { Button(enabled = !action.busy && selected != null, modifier = Modifier.fillMaxWidth(), onClick = {
                 selected?.let { center ->
@@ -81,11 +81,11 @@ internal suspend fun <T> fetchCurrentNearby(request: NearbyQuery, current: () ->
             nearby?.let { result ->
                 item { Notice("반경 ${result.radius}m · ${result.counts.entries.joinToString(" · ") { "${it.key.label()} ${it.value}개" }}") }
                 if (result.places.isEmpty()) item { EmptyState("이 범위에 시설이 없어요", "반경이나 카테고리를 바꿔보세요.") }
-                items(result.places, key = { it.providerPlaceId }) { place -> OutlinedCard(Modifier.fillMaxWidth()) {
+                items(result.places, key = { "${it.category}:${it.providerPlaceId}" }) { place -> OutlinedCard(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(place.name, fontWeight = FontWeight.Bold)
                         Text("${place.category.label()} · ${place.distanceMeters}m", style = MaterialTheme.typography.bodySmall)
-                        Text(place.address, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        if (place.address.isNotBlank()) Text(place.address, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 } }
             }
@@ -144,19 +144,19 @@ private data class ComparisonEntry(val property: PropertyDetailDto, val memo: St
                                 Text(property.name, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                                 Text(property.address ?: "주소 미입력", style = MaterialTheme.typography.bodySmall)
                                 property.representativePhoto?.let { PhotoImage(api, property.id, it.id, property.name, Modifier.fillMaxWidth().height(150.dp)) }
+                                    ?: PhotoPlaceholder(Modifier.fillMaxWidth().height(150.dp))
                                 InfoRow("보증금", money(property.depositAmount)); InfoRow("월세", money(property.monthlyRentAmount)); InfoRow("관리비", money(property.maintenanceFeeAmount))
                                 InfoRow("입주 가능", property.availableMoveInDate ?: "미입력")
                                 InfoRow("방 옵션", property.roomOptions.mapNotNull { RoomOptions[it] }.joinToString(", ").ifBlank { "미입력" })
                                 InfoRow("포함 공과금", property.utilityOptions.mapNotNull { UtilityOptions[it] }.joinToString(", ").ifBlank { "미입력" })
                                 Progress(property.overallProgress)
-                                Text("좋아요 ${property.overallProgress.goodCount} · 주의 ${property.overallProgress.cautionCount} · 미확인 ${property.overallProgress.unconfirmedCount}", style = MaterialTheme.typography.bodySmall)
                                 HorizontalDivider()
                                 SectionTitle("자유 메모"); Text(entry.memo.ifBlank { "작성한 메모가 없어요." }, style = MaterialTheme.typography.bodyMedium)
                                 entry.checklists.forEach { checklist ->
                                     HorizontalDivider(); SectionTitle(checklist.stage.label(), checklist.checklistName)
                                     checklist.items.forEach { item ->
                                         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                            Text("${item.status.label()} · ${item.question}", style = MaterialTheme.typography.bodyMedium)
+                                            Text("${item.status.label()} · ${item.question}", style = MaterialTheme.typography.bodyMedium, color = item.status.ink())
                                             if (item.memo.isNotBlank()) Text(item.memo, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         }
                                     }
