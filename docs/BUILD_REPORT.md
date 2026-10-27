@@ -1,110 +1,111 @@
 # 실제 빌드·테스트 보고서
 
-검증일: **2026-10-10, Asia/Seoul**. 앱 디렉터리에서 실행했다. 아래 초기 구현 검증 단계에서는 서버 배포/운영 DB 변경/원격 push를 하지 않았다.
+검증일: **2026-10-27, Asia/Seoul**. 개인 저장소 `mobile-kmp`에서 실행했다. [Issue #1](https://github.com/softmoca/mobile-kmp/issues/1)과 [Draft PR #2](https://github.com/softmoca/mobile-kmp/pull/2)의 후속 검증이며 작업 브랜치는 `codex/kmp-mobile`이다. 상위 팀 저장소와 운영 서버를 변경하지 않았고 PR을 Merge하지 않았다.
 
-후속 게시 단계에서 사용자 요청에 따라 [Issue #1](https://github.com/softmoca/mobile-kmp/issues/1)과 [Draft PR #2](https://github.com/softmoca/mobile-kmp/pull/2)를 생성하고 개인 저장소에 Push했다. `main`은 초기 기반 커밋 `25dabad`, PR 작업 브랜치는 `codex/kmp-mobile`이다. 실제 iPhone 설치·QA 준비는 [IPHONE_QA](IPHONE_QA.md)에 정리했으며, 기기 설치·Apple 계정 인증·서명 설정·Merge는 아직 수행하지 않았다. 이 후속 변경은 문서와 서명 파일 ignore 규칙이며 앱 코드는 변경하지 않았다.
+## 확인한 환경
 
-## 환경
+- macOS Apple Silicon, Temurin JDK 21.0.12.1, Gradle 8.14.3.
+- 실제 설치 Xcode **27.1 (27A9275)**. iPhone 18 Pro / iOS Simulator **27.0 (24A434)**.
+- 신규 테스트 전용 Simulator: `KMP Dev QA 20261027`, UUID `16437E57-81CA-4079-A5B4-1B7E92AC4E44`. 기존 기기·Simulator의 앱 저장소를 초기화하지 않았다.
+- dev API **2.1.0**, 배포 커밋 `7e3fa9aa18f67bc1db75da92fd10df660cf3ca9f`. `/v3/api-docs`와 `/actuator/info`를 조회했다.
+- 계약 비교 시점의 읽기 전용 상위 소스 HEAD는 `e7494a02b6a8c3081807b8b8755e7fec8b1e5c69`로 배포 SHA와 다르다. 연결 기준은 배포 계약과 실제 응답이다.
+- 사용자가 변경한 `project.pbxproj`와 `Info.plist`는 그대로 보존하고 개인 Team·서명 설정을 커밋에 포함하지 않는다.
 
-- macOS Apple Silicon, JDK Temurin 21.0.12.1, Gradle 8.14.3.
-- Android SDK 36 / Build Tools 35.0.0. SDK는 이 저장소의 `.tools/android-sdk`에 설치했다.
-- Xcode 27.0 (27A266a), iPhone 18 Pro / iOS Simulator 27.0.
-- Debug 개발 API 배포: v1.1.0, `fb5e371d7b56c2dee0df82d87c01205be8cf5a3f`. 상위 저장소 HEAD와 일치.
-- 처음의 DNS/Gradle 캐시/Simulator 접근 제한은 필요한 빌드 도구 접근을 승인받아 다시 실행했다. 실패 로그를 성공으로 간주하지 않았다.
-
-## 최종 완료된 검사
-
-### Android 빌드·로컬 테스트·Lint
+## 로컬 테스트와 Android 빌드
 
 ```sh
-./gradlew :composeApp:testDebugUnitTest :composeApp:assembleDebug \
-  :composeApp:lintDebug :composeApp:assembleRelease --console=plain
+./gradlew :composeApp:testDebugUnitTest :composeApp:assembleDebug :composeApp:lintDebug --console=plain
 ```
 
-**BUILD SUCCESSFUL**. Debug APK와 미서명 Release APK 생성. 로컬 테스트 **33개 성공**(API 19, 도메인 5, UI 상태 9). 실제 서버 테스트 2개는 기본 실행에서 opt-in 조건 때문에 skip한다. 이 두 검사는 아래 별도 실행에서 통과했다. Lint 오류는 0이다. 고정 안정 버전보다 최신 버전이 있다는 알림, 의도적인 동기 SharedPreferences commit, KTX/버전 카탈로그 권고 등의 경고는 남는다.
+**BUILD SUCCESSFUL**. 로컬 테스트 **54개 통과**: API 37, 입력 검증 4, UI 상태 13. 외부 API 테스트 2개는 기본 실행에서 opt-in 조건으로 skip했다. Debug APK 생성 성공, Lint **오류 0 / 경고 31**. Android 실기기 검증과 이번 변경의 Release 빌드는 실행하지 않았다.
 
-- `composeApp/build/outputs/apk/debug/composeApp-debug.apk`
-- `composeApp/build/outputs/apk/release/composeApp-release-unsigned.apk`
-- `composeApp/build/reports/tests/testDebugUnitTest/index.html`
-- `composeApp/build/reports/lint-results-debug.html`
-- 실제 로그: `.tools/android-final.log`
+- 인증: 최초 익명 진입, Refresh Cookie scope·형식, 기존 회원 복원, 동시 401 단일 갱신/실패 공유, 두 번째 401 종료, 이전 세션 응답 격리, legacy/origin 불일치, 저장소 오류·재시도·쿠키 보존.
+- UI: 기존 화면을 유지한 새로고침, 메모 저장 뒤 늦은 조회 차단, 체크 확정 응답 뒤 조회 실패 보존, 실제 완료 필터, 요청 경합·취소·중복 동작.
+- 로그: `.tools/refresh-20261027/android-final-insets-validation.log`.
+- XML 보존: `.tools/refresh-20261027/unit-test-results/`.
+- APK: `composeApp/build/outputs/apk/debug/composeApp-debug.apk`.
+- Lint 보고서: `composeApp/build/reports/lint-results-debug.html`.
 
-Android 실물 기기·에뮬레이터 설치/권한 UI 조작은 수행하지 않았다. APK 빌드와 JVM에서 실제 API 클라이언트 실행을 검증한 것이다.
-
-### 실제 개발 API 클라이언트 테스트
+## 실제 dev API 검사
 
 ```sh
 RUN_DEV_API_SMOKE=1 ./gradlew :composeApp:testDebugUnitTest \
-  :composeApp:assembleDebug :composeApp:lintDebug --console=plain
+  --tests 'kr.jachwisunbae.app.DevApiSmokeTest' --rerun-tasks --console=plain
 ```
 
-`DevApiSmokeTest` **2/2 성공**. 이 실행 전체에는 당시 UI 경합 테스트 실패 1건이 있었으며 이후 원인을 수정하고 최종 로컬 테스트 전체를 재실행해 성공했다. 개발 API 테스트의 성공과 전체 빌드 실패를 구분한다.
+**2/2 통과, 0 skip, 0 실패**, 테스트 실행 7.36초. `ApiClient`와 실제 dev 서버를 사용했으며 별도 Mock 서버가 없다.
 
-검증한 기능: 새 비밀번호 보호 테스트 회원 로그인, 세션 복구, 빈 목록, 매물 CRUD, 자유 메모, 사용자 체크리스트 CRUD, 두 단계 체크리스트 적용, 체크 상태·메모·진행률, PNG 사진 추가/바이트 조회/대표 지정/삭제, 두 매물 PDF 생성, 주소 검색/역지오코딩/주변 시설. PDF **63,280 bytes** 및 `%PDF-` 헤더를 확인했다. 주변 시설 **173개**를 실제 응답으로 받았다.
+| 검증       | 실제 결과                                                                                            |
+| ---------- | ---------------------------------------------------------------------------------------------------- |
+| 익명 인증  | 신규 회원 생성, `/members/me` 동일 ID                                                                |
+| 세션 복원  | 새 ApiClient가 보관한 Refresh Cookie로 같은 회원 복원, Access Token은 저장하지 않음                  |
+| 토큰 갱신  | 명시 refresh와 테스트 interceptor가 보낸 무효 Bearer의 실제 401 이후 refresh 1회·원 요청 재시도 성공 |
+| 매물·메모  | 매물 2개 생성·조회·수정·삭제, 줄바꿈 포함 메모 저장·재조회                                           |
+| 체크리스트 | 사용자 양식 생성·수정·조회·삭제, 방문/계약 전 적용, GOOD/CAUTION/UNCONFIRMED 변경, 항목 메모·집계    |
+| 사진       | 최소 PNG fixture 업로드·인증 바이트 조회·대표 지정·삭제, 사진 없는 목록                              |
+| PDF        | 두 매물 비교 PDF **66,002 bytes**, Content-Type 및 `%PDF-` 확인                                      |
+| 지도       | 주소 검색·역지오코딩, 주변 **155개**(버스정류장 **42개**), 편의시설 필터 **37개**                    |
+| 정리       | QA 매물 2개·사진·사용자 양식 1개 삭제, 매물·양식 빈 목록 확인                                        |
 
-테스트 매물과 체크리스트는 삭제하고 빈 목록을 확인했다. 테스트 계정 2개는 회원 삭제 API가 없어 남는다. 비밀번호와 JWT는 출력·파일 저장하지 않았다. 증거 요약은 [verification/dev-api-results.json](verification/dev-api-results.json)에 보존했다.
+매물/양식 이름은 `KMP QA 4813d476 ...`로 구분했다. 이 실행은 별도 익명 회원 2개를 사용했으며 회원 삭제 API가 없어 회원은 남는다. 테스트 종료 시 매물·체크리스트 삭제 실패는 테스트 실패로 처리한다. Refresh Cookie·JWT·개인 인증 정보는 출력하거나 파일에 저장하지 않았다.
 
-### iOS Simulator 앱 빌드
+로그와 XML: `.tools/refresh-20261027/dev-api-smoke.log`, `.tools/refresh-20261027/dev-api-test-results/`. 요약: [verification/dev-api-results-2026-10-27.json](verification/dev-api-results-2026-10-27.json).
 
-```sh
-xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp \
-  -configuration Debug -sdk iphonesimulator \
-  -destination 'generic/platform=iOS Simulator' \
-  -derivedDataPath .tools/DerivedData CODE_SIGNING_ALLOWED=NO build
-```
-
-**BUILD SUCCEEDED**. 공통 Kotlin → arm64 Simulator framework → Swift 호스트 → 최종 `.app` 링크까지 확인했다. `.tools/ios-app-final.log`.
-
-산출물: `.tools/DerivedData/Build/Products/Debug-iphonesimulator/JachwiSunbae.app`.
-
-### iOS Simulator 실제 UI 테스트
+## iOS Simulator 검증
 
 ```sh
 xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosAppDevSmoke \
   -configuration Debug \
-  -destination 'platform=iOS Simulator,id=2FC71432-C035-4DD2-A4F9-3E02C83BAFD0' \
-  -derivedDataPath .tools/DerivedData \
-  -resultBundlePath .tools/ios-ui-signed.xcresult \
-  -test-timeouts-enabled YES -default-test-execution-time-allowance 90 \
-  -maximum-test-execution-time-allowance 120 \
-  CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- test
+  -destination 'platform=iOS Simulator,id=16437E57-81CA-4079-A5B4-1B7E92AC4E44' \
+  -derivedDataPath .tools/refresh-20261027/DerivedData \
+  -resultBundlePath .tools/refresh-20261027/ios-ui-insets-fixed.xcresult \
+  -collect-test-diagnostics never \
+  -test-timeouts-enabled YES -default-test-execution-time-allowance 300 \
+  -maximum-test-execution-time-allowance 360 \
+  CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM= test
 ```
 
-**TEST SUCCEEDED**, XCTest **1개 성공 / 0 실패**, 테스트 실행 36.628초. 비밀번호 표시 버튼, 닉네임 입력, 실제 개발 API 로그인, 빈 매물 목록, 앱 프로세스 종료·재실행 후 **Keychain 세션 복원**, **네이티브 MapKit 표시**, 로그아웃 후 로그인 화면 복귀를 검증했다. `.tools/ios-ui-signed.log`와 `.tools/ios-ui-signed.xcresult`에 원본 결과가 있다.
+**TEST SUCCEEDED: 1/1 통과, 0 실패, 121.110초.** 앱 실행·같은 익명 회원의 Keychain 복원·네이티브 MapKit을 확인했다. 29자 QA 매물명과 긴 주소로 등록하고 사진 없음 표시·메모 저장을 검사했다. 앱을 종료·재실행한 뒤 서버에서 매물과 메모를 다시 읽었으며, 마지막에 테스트 매물을 삭제하고 빈 목록을 확인했다.
 
-초기 `CODE_SIGNING_ALLOWED=NO` 실행은 Keychain entitlement 누락으로 실패했다. Simulator `securityd`가 `-34018`을 기록했으며, 로컬 ad-hoc 서명을 켜자 Xcode가 Simulator용 application-identifier를 생성하고 전체 흐름이 통과했다. Apple 계정이나 사용자의 인증서를 사용하지 않았다. 미서명 빌드 성공은 Keychain을 포함한 실행 성공을 의미하지 않는다.
+QA 이름: `KMP iOS QA 7F56EEC6 LONG-NAME`. 로그의 `UI QA property cleanup confirmed`까지 확인했다. 로그: `.tools/refresh-20261027/ios-ui-insets-fixed.log`, 결과 번들: 위 명령의 `.xcresult`.
 
-UI 테스트는 매번 무작위 `qa_ios_` 개발 회원을 사용한다. 실패 재시도 중 생성된 회원을 포함해 테스트 회원은 삭제 API가 없어 남는다. 이 테스트에서는 매물·사진·체크리스트를 만들지 않았다. 성공 화면은 [빈 매물 목록](verification/ios-empty-properties.png), [MapKit 지도](verification/ios-mapkit.png)에 보존했다.
+확인한 화면: [긴 이름·주소와 사진 없음](verification/ios-property-long-text-2026-10-27.png), [MapKit](verification/ios-mapkit-2026-10-27.png), [재실행 후 메모](verification/ios-memo-restored-2026-10-27.png), [삭제 후 빈 목록](verification/ios-cleanup-empty-2026-10-27.png). [실행 요약 JSON](verification/ios-results-2026-10-27.json)에 검증한 코드 커밋과 결과를 기록했다.
 
-### iPhone 기기용 미서명 빌드
+Simulator는 로컬 ad-hoc 서명을 사용했다. Apple 계정 인증서나 실기기 provisioning profile을 사용하지 않았다. 기본 `iosApp` scheme의 UI 테스트는 앱 실행 전 skip하며 실제 네트워크 검사는 `iosAppDevSmoke`에서만 opt-in한다. 테스트 전용 Simulator의 익명 회원은 남고 정상 종료 시 QA 매물은 삭제한다.
+
+## iPhone arm64 빌드
 
 ```sh
 xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp \
-  -configuration Debug -sdk iphoneos \
-  -destination 'generic/platform=iOS' \
-  -derivedDataPath .tools/DerivedDataDevice CODE_SIGNING_ALLOWED=NO build
+  -configuration Debug -sdk iphoneos -destination 'generic/platform=iOS' \
+  -derivedDataPath .tools/refresh-20261027/DerivedDataDevice \
+  CODE_SIGNING_ALLOWED=NO DEVELOPMENT_TEAM= build
 ```
 
-**BUILD SUCCEEDED**. iosArm64 프레임워크와 기기용 Swift 앱 링크 성공. `.tools/ios-device-build.log`. 실제 기기에 설치한 것은 아니다.
+**BUILD SUCCEEDED**. 등록 경로와 키보드 여백 수정까지 포함한 `iosArm64` 프레임워크와 Swift 앱 링크를 확인했다. 로그: `.tools/refresh-20261027/ios-device-insets-final.log`. 산출물은 `.tools/refresh-20261027/DerivedDataDevice/Build/Products/Debug-iphoneos/JachwiSunbae.app`이다.
 
-## 빌드 과정에서 발견하고 수정한 문제
+실제 iPhone 설치 성공을 뜻하지 않는다. Xcode에서 기존 Team·Bundle Identifier를 유지하고 실제 기기를 선택해 개발 서명으로 설치해야 한다. 개인 설정 파일은 시작 시 저장한 SHA-256과 비교해 보존 여부를 확인한다. [IPHONE_QA](IPHONE_QA.md)를 따른다.
 
-- 공통 Navigation의 Android Bundle 전용 접근을 SavedState `read`로 수정.
-- 회원 `id/name`, 사진 목록 `items` 등 실제 DTO 연결 수정.
-- Android 사진/파일 선택의 nullable coroutine 타입 추론 수정.
-- 로그인 복원 시 오프라인 예외가 Compose 효과 밖으로 전파되는 문제 수정.
-- 화면 종료가 보안 저장소 삭제를 취소하지 않도록 로그아웃/401 정리 순서·취소 경계를 수정.
-- 중복 새로고침 취소·이전 응답 덮어쓰기와 주변 검색 조건 경합 수정.
-- JUnit smoke 테스트의 반환 타입을 Unit으로 고정.
-- Simulator generic 빌드가 없는 x86_64 리소스를 찾지 않도록 Xcode ARCHS를 arm64로 명시.
-- Kotlin에서 내보낸 Swift 콜백 반환 타입을 실제 헤더의 Void에 맞추고 MapKit camera 속성 충돌을 수정.
-- 사진 디코딩을 백그라운드에서 최대 2048px로 제한하고 iOS HEIC는 ImageIO 경로를 추가.
-- Android 12+ 기기 간 이전에서도 암호화 세션 파일을 제외하도록 dataExtractionRules 추가.
-- iOS 실제 실행 중 발견한 비동기 PlistSanityCheck 종료를 수정. Compose가 요구하는 `CADisableMinimumFrameDurationOnPhone=true`를 Info.plist에 추가하고 기기용 앱도 재빌드.
-- XCTest가 Compose 입력란을 찾도록 testTag 추가. 새 Simulator의 키보드 안내창 처리와 스크롤 위치 안정 대기를 테스트에 추가.
+## 이번 검증 중 수정한 문제
 
-## 남은 경고와 실행 범위
+1. 실제 API 계약 변경: 닉네임/비밀번호 DTO와 endpoint를 제거하고 익명 로그인·Refresh Cookie로 전환했다. `/nearby`에서 제거된 TRANSPORT는 별도 버스정류장 endpoint로 조회한다.
+2. 보안 저장소의 없음과 읽기 오류를 구분한다. 저장 실패 후 수신한 쿠키는 메모리에서 보존해 저장 재시도를 먼저 하며 중복 익명 회원 생성을 막는다. 저장 성공 전 프로세스가 종료되면 복원을 보장할 수 없으므로 오류를 숨기지 않는다.
+3. 일반 요청 갱신·늦은 응답·계정 전환 경합을 보호하고, 만료를 조용한 새 계정 생성으로 처리하지 않는다.
+4. UI 갱신 중 기존 화면과 메모 초안을 유지하고, 확정된 체크 저장 결과가 후속 조회 실패 때문에 이전 상태로 보이지 않도록 했다.
+5. 초기 통합 컴파일의 URLBuilder 접근과 TRANSPORT 표시 분기 누락을 수정했다.
+6. MockEngine 기본 dispatcher와 runTest 가상 시계가 분리되어 인증 30초 제한이 먼저 만료되던 테스트 환경을 공통 scheduler로 맞췄다. 앱의 timeout을 제거하지 않았다. 이후 54개 테스트가 통과했다.
+7. 실제 Simulator에서 매물 등록이 빈 화면으로 열리는 문제를 재현했다. Navigation 2.9.1의 nonAndroid 경로 우선순위에서 `property/new`가 `property/{id}`와 겹쳤다. 매물/양식 생성 경로를 `property-create`/`template-create`로 분리했다. 고정 버전의 `NavDeepLink.kt`와 `NavDestination.nonAndroid.kt` 소스도 확인했다.
+8. 키보드가 나타나면 등록 폼이 이름 입력칸 높이로 줄어드는 문제를 영상·접근성 트리로 확인했다. 바깥 Scaffold의 `safeDrawing` 여백을 NavHost에서 소비하지 않아 하위 `imePadding()`이 키보드 높이를 다시 적용했다. `consumeWindowInsets(insets)`로 중복 적용을 막았다. [Compose Scaffold 여백 처리 기준](https://developer.android.com/develop/ui/compose/system/material-insets)을 함께 확인했다.
 
-선택 Kotlin 버전의 공식 표는 Xcode 26.0까지이며 실제 설치된 Xcode 27에서 위 빌드가 통과했다. 이 결과를 모든 Xcode/iOS 버전 지원으로 확대하지 않는다. Simulator 링크의 ICU 데이터 오브젝트에는 minos17.2 메타데이터 경고가 있다. 확인한 오브젝트는 코드(__text)가 없고 정적 데이터만 포함하며 OS 미해결 심볼도 없다. iOS 16 최소 버전은 설정되어 있지만 iOS 16 런타임 실행은 하지 않았다.
+중간 Simulator 실행은 등록 경로·키보드 소개 패널·중복 여백 문제로 등록 제출 전에 실패했다. 테스트는 안내 패널을 조건부로 닫고 키보드 위 표시 영역에서 스크롤하도록 보완했다. 실패 실행을 성공으로 기록하지 않으며, 최종 실행 결과와 증거는 위 Simulator 항목에 기록한다.
 
-위치 권한 거부·재허용과 실제 GPS, 사진 선택기의 실제 사진(HEIC 포함), PDF 파일 저장과 다른 앱으로의 공유는 기기별 수동 검증이 남는다. Android Release 서명과 Apple Team/Provisioning은 사용자의 배포 자격증명을 필요로 하므로 설정하지 않았다. 운영 API 변경 요청은 한 번도 보내지 않았다.
+## 남은 범위와 경고
+
+- 실제 iPhone의 설치·GPS·위치 권한 거부/재허용, 실제 HEIC 선택, PDFKit/Files/외부 공유, 작은 화면·큰 글꼴·다수 매물 사용은 사용자의 기기에서 이어서 확인한다.
+- iOS 16 최소 설정은 유지하지만 해당 런타임에서 실행하지 않았다. Simulator의 ICU minOS 17.2와 XCTest minOS 17 경고, MapLibre deprecated API·Gradle/AGP 권고 경고가 남는다. Xcode 27.1의 실제 빌드 결과를 모든 버전 지원으로 확대하지 않는다.
+- App Store/TestFlight, Android 실기기, PostHog/행동 분석, 운영 환경 변경은 이번 작업에 포함하지 않는다.
+- 테스트 데이터만 생성·정리했다. 새 테스트 회원은 삭제 endpoint가 없어 남는다. 상위 팀 저장소는 읽기 전용이며 개인 원격의 Draft PR만 갱신한다.
+
+## 이전 초기 검증
+
+2026-10-10의 v1.1.0 닉네임 로그인 기준 결과는 과거 기록이다: 로컬 33개, 실제 API 2개, Simulator XCTest 1개, Android Debug/미서명 Release·Lint와 iPhone 미서명 빌드 성공. 당시 PDF는 63,280바이트, 주변 시설은 173개였다. [당시 보고서](https://github.com/softmoca/mobile-kmp/blob/6f4788347a68ee85ccaf68c31b8f5429ab5a46c1/docs/BUILD_REPORT.md)와 기존 `verification` 파일은 현재 익명 계약의 검증 결과로 사용하지 않는다.

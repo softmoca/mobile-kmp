@@ -1,12 +1,12 @@
 # 네이티브 기능과 설정
 
-확인일: 2026-10-10. 공통 Compose UI는 `PlatformServices`와 `NativeMap`만 사용한다. Android는 Kotlin/Android API, iOS는 `IOSPlatformBridge`를 구현한 Swift `IOSServices`가 Apple SDK를 호출한다. WebView는 사용하지 않는다.
+확인일: 2026-10-27. 공통 Compose UI는 `PlatformServices`와 `NativeMap`만 사용한다. Android는 Kotlin/Android API, iOS는 `IOSPlatformBridge`를 구현한 Swift `IOSServices`가 Apple SDK를 호출한다. WebView는 사용하지 않는다.
 
 ## 로그인 정보
 
-- Android: Android Keystore에서 생성한 비추출 AES 키, `AES/GCM/NoPadding`, 매번 생성되는 IV로 토큰을 암호화한다. SharedPreferences에는 암호문과 IV만 저장한다. 키 접근/암호화/디스크 작업은 IO dispatcher에서 수행한다. `allowBackup=false`로 다른 기기로 암호문만 복원되는 상황을 방지한다. 손상·키 무효화 시 세션을 비운다.
-- iOS: Keychain generic-password item, `kSecAttrAccessibleWhenUnlockedThisDeviceOnly`, 앱 번들 ID별 서비스 이름을 사용한다. iCloud 동기화를 활성화하지 않는다. 앱 삭제 후에도 Keychain이 남을 수 있으므로 로그아웃 때 명시적으로 삭제한다.
-- Debug와 Release의 번들/애플리케이션 ID가 다르므로 개발·운영 토큰을 분리한다. 비밀번호는 저장하지 않는다.
+- Android: Android Keystore에서 생성한 비추출 AES 키, `AES/GCM/NoPadding`, 매번 생성되는 IV로 토큰을 암호화한다. SharedPreferences에는 암호문과 IV만 저장한다. 키 접근/암호화/디스크 작업은 IO dispatcher에서 수행한다. `allowBackup=false`로 다른 기기로 암호문만 복원되는 상황을 방지한다. 손상·키 무효화·부분 저장은 오류로 전달하고 암호문을 보존한다. 읽기 시 새 키를 만들지 않는다.
+- iOS: Keychain generic-password item, `kSecAttrAccessibleWhenUnlockedThisDeviceOnly`, 앱 번들 ID별 서비스 이름을 사용한다. iCloud 동기화를 활성화하지 않는다. 앱 삭제 후에도 Keychain이 남을 수 있다. `errSecItemNotFound`만 빈 저장소로 해석하고, 다른 읽기 오류·UTF-8 변환 실패는 전달한다. 읽기·쓰기·삭제는 백그라운드에서 실행한다.
+- Debug와 Release의 번들/애플리케이션 ID가 다르므로 개발·운영 토큰을 분리한다. Access Token은 메모리 전용이며 보안 저장소에는 origin·회원 ID·Refresh Cookie만 저장한다. 만료 marker와 구버전 저장값도 자동 신규 회원 생성을 막는 데 사용한다.
 
 근거: [Android Keystore](https://developer.android.com/privacy-and-security/keystore), [Apple Keychain Services](https://developer.apple.com/documentation/security/keychain-services).
 
@@ -26,10 +26,10 @@ iOS는 PhotosUI `PHPickerViewController`로 사용자가 고른 사진 한 장�
 
 빈 지도 최초 카메라 중심은 서울시청 주변이다. 이는 사용자 위치나 등록 매물 데이터가 아니다. 실제 매물·주변 시설 핀은 서버 좌표만 사용한다. 선택한 주소, 현재 위치, 지도 탭은 공통 `Coordinates`로 전달하며 카메라를 이동한다.
 
-| 플랫폼 | 구현 | 설정과 조건 |
-| --- | --- | --- |
-| iOS | Apple MapKit `MKMapView` | 네이티브 SDK는 별도 지도 API 키를 요구하지 않는다. Apple 기본 출처 표기를 유지한다. MapKit JS/서버 API는 사용하지 않는다. Apple SDK/서비스 약관 적용. |
-| Android | MapLibre Native 13.5.2 네이티브 MapView + OSM 표준 래스터 타일 | 키·결제 계정 없이 개발 가능. MapLibre는 BSD-2-Clause, 지도 데이터는 ODbL. 화면에 `© OpenStreetMap contributors`와 라이선스 링크를 표시한다. |
+| 플랫폼  | 구현                                                           | 설정과 조건                                                                                                                                           |
+| ------- | -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| iOS     | Apple MapKit `MKMapView`                                       | 네이티브 SDK는 별도 지도 API 키를 요구하지 않는다. Apple 기본 출처 표기를 유지한다. MapKit JS/서버 API는 사용하지 않는다. Apple SDK/서비스 약관 적용. |
+| Android | MapLibre Native 13.5.2 네이티브 MapView + OSM 표준 래스터 타일 | 키·결제 계정 없이 개발 가능. MapLibre는 BSD-2-Clause, 지도 데이터는 ODbL. 화면에 `© OpenStreetMap contributors`와 라이선스 링크를 표시한다.           |
 
 MapLibre 13.5.2는 공식 2026-09-23 안정 릴리스다. Maven Central 게시 POM의 Kotlin 2.2.10, coroutines 1.10.2, OkHttp 4.12.0 의존성을 확인했고 프로젝트 Kotlin 2.2.21 조합으로 빌드한다. MapLibre 자체는 Android와 iOS를 지원하며, 이 앱의 iOS 구현은 별도 외부 의존성이 없는 Apple MapKit을 사용한다. MapLibre 네이티브 MapView를 Compose AndroidView에 넣으므로 JavaScript/WebView 지도가 아니다.
 
@@ -68,6 +68,6 @@ xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp \
 
 Simulator 실행에도 Xcode의 기본 ad-hoc 서명을 유지한다. `CODE_SIGNING_ALLOWED=NO`로 서명을 끄면 앱이 실행되더라도 Keychain에 필요한 `application-identifier` entitlement가 없어 로그인 저장이 `errSecMissingEntitlement(-34018)`로 실패할 수 있다. 서명 없는 실기기 빌드는 컴파일 확인에만 사용한다. 문제가 생기면 Simulator의 securityd 로그와 Xcode가 생성한 `*-Simulated.xcent` 및 바이너리의 `__TEXT,__entitlements` 링크 여부를 확인한다. 실기기 산출물은 최종 `.app`의 `codesign -d --entitlements -` 출력으로 확인한다. [Apple의 Keychain entitlement 진단](https://developer.apple.com/forums/thread/114456).
 
-`iosAppUITests/SmokeTests.swift`는 로그인 화면, 빈 닉네임에서 버튼 비활성, 닉네임 입력과 스크린샷을 검사한다. 네트워크 로그인은 별도 `iosAppDevSmoke` scheme을 명시적으로 선택할 때만 실행한다. 이 scheme이 테스트 프로세스에 `RUN_DEV_UI_SMOKE=1`을 전달한다. 그 경우 무작위 새 개발 닉네임을 생성하고 빈 매물 화면, 앱 재실행 후 Keychain 세션 복원, 네이티브 MapKit 표시, 로그아웃을 확인한다. 기본 테스트는 로그인 요청을 보내지 않는다. 실제 실행 결과는 `BUILD_REPORT.md`가 기준이다.
+`iosAppUITests/SmokeTests.swift`는 명시적으로 `iosAppDevSmoke` scheme을 고른 경우에만 실제 앱을 실행한다. 이 scheme이 `RUN_DEV_UI_SMOKE=1`을 전달한다. 기본 scheme은 앱의 자동 익명 회원 생성을 피하도록 launch 전에 skip한다. 새 테스트 전용 Simulator에서 익명 기록 진입, 마이 회원 번호, 앱 재실행 후 같은 회원 복원, MapKit 및 매물·메모 흐름을 확인한다. 실제 통과 범위는 [BUILD_REPORT](BUILD_REPORT.md)에 기록한다. 기존 사용 데이터가 있는 iPhone에 이 자동 검사를 실행하지 않는다.
 
 실기기 설치는 Xcode의 Signing & Capabilities에서 사용자의 Apple Team을 선택하고 고유 Bundle Identifier를 설정한 다음, 연결된 iPhone에서 개발자 모드/기기 신뢰를 승인해야 한다. Apple 계정·서명 인증서는 이 저장소에 포함하지 않는다. 위치 허용/거부, 실제 사진 선택, 파일 앱 저장, 공유 대상 앱까지의 수동 검증은 실기기에서 별도로 실행한다.

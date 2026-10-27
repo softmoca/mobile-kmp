@@ -1,6 +1,6 @@
 # 자취선배 모바일
 
-Kotlin Multiplatform + Compose Multiplatform으로 만든 Android·iOS 앱이다. 기존 Spring Boot API를 사용한다. 이 디렉터리는 상위 팀 프로젝트와 별도 Git 저장소다.
+Kotlin Multiplatform + Compose Multiplatform으로 만든 Android·iOS 앱이다. 기존 Spring Boot 개발 API와 연동하며 iPhone에서 직접 사용하면서 개선한다. 앱 실행 시 익명 회원을 생성하거나 저장된 Refresh Cookie로 기존 회원을 복원한다. 이 디렉터리는 상위 팀 프로젝트와 별도 Git 저장소다.
 
 ## 환경 준비
 
@@ -44,7 +44,7 @@ xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp \
   -derivedDataPath .tools/DerivedData CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- build
 ```
 
-Simulator UI 검사는 `iosApp` scheme의 `test` 액션으로 실행한다. 새 격리 개발 회원의 실제 로그인·로그아웃까지 검사하려면 명시적으로 `iosAppDevSmoke` scheme을 선택한다.
+기본 `iosApp` scheme의 UI 검사는 앱을 실행하기 전에 skip한다. 실제 개발 API를 사용하는 UI 검사는 테스트 전용 새 Simulator에서 명시적으로 `iosAppDevSmoke` scheme을 선택한다. 기존 앱 데이터가 있는 기기에서는 실행하지 않는다.
 
 ```sh
 xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosAppDevSmoke \
@@ -52,22 +52,22 @@ xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosAppDevSmoke \
   -derivedDataPath .tools/DerivedData CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- test
 ```
 
-기기 이름은 설치된 Simulator로 바꾼다. `iosAppDevSmoke`만 테스트 프로세스에 `RUN_DEV_UI_SMOKE=1`을 전달한다.
+기기 이름은 별도로 만든 QA Simulator 이름 또는 UUID로 바꾼다. `iosAppDevSmoke`만 테스트 프로세스에 `RUN_DEV_UI_SMOKE=1`을 전달한다.
 
 Simulator도 Keychain에 접근하려면 로컬 ad-hoc 서명이 필요하다. Apple 계정 없이 위 명령으로 서명할 수 있다. `CODE_SIGNING_ALLOWED=NO`는 컴파일 확인에만 사용한다. 이를 실행용으로 사용하면 Keychain entitlement 누락으로 로그인이 저장되지 않는다.
 
 실제 iPhone에서는 Xcode의 Signing & Capabilities에서 자신의 Apple Team을 선택하고, 고유 Bundle Identifier를 설정한 뒤 연결한 기기를 선택한다. 기기에서 개발자 모드와 개발자 인증서 신뢰가 필요할 수 있다. 개인 Apple ID 서명 또는 배포 계정 인증은 사용자가 처리한다.
 
-처음 설치한다면 [실제 iPhone 설치·QA 안내](docs/IPHONE_QA.md)의 프로젝트 열기 → 기기 연결 → Team/서명 → Debug 실행 순서와 16개 점검 항목을 따른다. 서명 파일은 Git에 포함하지 않는다.
+기존 Team·Bundle Identifier를 유지한 채 재설치하면 같은 Keychain 기록을 사용할 수 있다. 처음 설치한다면 [실제 iPhone 설치·QA 안내](docs/IPHONE_QA.md)의 프로젝트 열기 → 기기 연결 → Team/서명 → Debug 실행 순서와 16개 점검 항목을 따른다. 서명 파일은 Git에 포함하지 않는다.
 
 ## API 환경과 키
 
-| 빌드 | API | 앱 식별자 |
-|---|---|---|
-| Debug | `https://dev-api.jachwi-sunbae.kr` | `kr.jachwisunbae.app.dev` |
-| Release | `https://api.jachwi-sunbae.kr` | `kr.jachwisunbae.app` |
+| 빌드    | API                                | 앱 식별자                 |
+| ------- | ---------------------------------- | ------------------------- |
+| Debug   | `https://dev-api.jachwi-sunbae.kr` | `kr.jachwisunbae.app.dev` |
+| Release | `https://api.jachwi-sunbae.kr`     | `kr.jachwisunbae.app`     |
 
-운영 API를 대상으로 자동 데이터 변경 테스트를 실행하지 않는다. Release 빌드는 사용자 배포 서명 설정이 필요하다. 토큰과 비밀번호를 환경 파일·소스코드에 넣지 않는다.
+운영 API를 대상으로 자동 데이터 변경 테스트를 실행하지 않는다. Release 빌드는 사용자 배포 서명 설정이 필요하다. Refresh Cookie와 Access Token을 환경 파일·소스코드에 넣지 않는다.
 
 기본 지도는 Android OSM, iOS MapKit을 사용하여 별도 지도 키가 없다. 주소·주변시설 조회는 기존 백엔드 제공자를 사용한다. 라이선스·타일 정책·배포시 검토 사항은 [PLATFORM](docs/PLATFORM.md)을 참조한다.
 
@@ -80,15 +80,25 @@ RUN_DEV_API_SMOKE=1 ./gradlew :composeApp:testDebugUnitTest \
   --tests 'kr.jachwisunbae.app.DevApiSmokeTest' --rerun-tasks
 ```
 
-자격증명·JWT는 출력하거나 파일에 저장하지 않는다. 실제 사용자 닉네임으로 테스트하지 않는다.
+자격증명·JWT는 출력하거나 파일에 저장하지 않는다. 고유한 `KMP QA` 이름의 매물·체크리스트만 생성하고 정리한다. 테스트용 회원 ID·QA 이름은 실행 결과에 기록하고, 정리가 실패하면 남은 항목 ID를 출력한다. 실제 사용자 자격증명은 사용하지 않는다.
 
 ## 사용 흐름
 
-1. 닉네임과 선택 비밀번호로 로그인한다. 비밀번호 없는 같은 닉네임은 기록을 공유하므로 개인 기록에는 비밀번호를 사용한다.
+1. 처음 실행하면 익명 회원의 빈 기록으로 시작한다. 재실행은 보관한 Refresh Cookie로 같은 회원을 복원한다. 마이에서 회원 번호를 확인할 수 있다. 네트워크 오류는 재시도하며, 구버전 로그인 정보나 만료된 연결은 안내와 확인을 거친 뒤에만 새 기록으로 시작한다.
 2. 내 매물에서 기본 금액·주소·방 옵션을 입력한다. 지도에서 주소 검색 또는 현재 위치를 선택할 수 있다.
 3. 매물 상세에서 사진·대표 사진·자유 메모를 관리한다. 방문/계약 전 체크리스트를 적용하고 상태·항목 메모를 기록한다.
 4. 체크리스트 탭에서 기본 항목을 조합해 사용자 체크리스트를 만든다.
 5. 지도에서 매물과 주변 시설을 확인한다. 내 매물에서 2~5개를 선택해 비교하고 PDF를 미리보기·저장·공유한다.
+
+## 문서 포맷팅
+
+상위 팀 저장소는 읽기 전용이다. 동일한 팀 Prettier 설정을 이 개인 저장소에 두고 Node 22.23.1에서 실행한다.
+
+```sh
+npm ci
+npm run format:docs
+npm run format:docs:check
+```
 
 ## 문서
 

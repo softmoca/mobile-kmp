@@ -1,0 +1,9 @@
+**/node_modules/
+**/build/
+**/dist/
+**/storybook-static/
+**/coverage/
+**/.next/
+.tools/
+.gradle/
+.konan/
