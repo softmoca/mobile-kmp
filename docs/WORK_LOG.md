@@ -70,3 +70,11 @@
 - 두 환경 모두 지도 인증 실패가 재현됐다. 지도 재시도 버튼의 전체 새로고침 이후에도 같다. 지도 SDK 다운로드 HTTP 200, 네이버 인증 HTTP 401 / 오류 코드 `200` / `Authentication Failed`를 확인했다. 요청 주소는 실제 Preview와 일치하며 Referer 위조나 인증 우회는 하지 않았다.
 - 브라우저에서 사용 중인 `ncpKeyId`와 Preview 로컬 키·팀 로컬 키의 일치 여부만 비교했다. 키·Secret·토큰은 출력하거나 검증 자료에 저장하지 않았다. 콘솔에 저장된 URL 한 줄을 사용자에게 요청했다. 설정 오등록·반영 지연 중 하나로 단정하지 않는다.
 - [검증 JSON](verification/cheap-meals-map-registration-2026-10-29.json)과 [실기기 오류 화면](verification/cheap-meals-iphone-map-auth-after-registration-2026-10-29.png)을 남겼다. 지도 타일·마커 선택·드래그 검증은 미완료다. 소스·Xcode·Release·팀 저장소 변경, push/merge/배포는 없다.
+
+## 2026-10-29 — 지도 허용 IP 정정 후 인증 성공
+
+- 사용자가 네이버 등록 IP를 `192.168.3.255`에서 실제 Mac IP인 `192.168.3.253`으로 정정했다. 같은 Preview 코드·키로 인증 응답이 HTTP 200 / `result: true`로 바뀌었다. 이전 `6d233b7`의 인증 실패 기록은 정정 전 상태로 보존한다.
+- 브라우저와 실제 iPhone 12 mini에서 네이버 타일·실제 업소 마커·반경 원을 확인했다. 브라우저에서 마커 선택 → 업소 상세 → 닫기 → 지도 드래그 → 이 위치에서 찾기를 수행해 다른 업소 목록으로 갱신됐다. warning/error 로그 0건.
+- 사용자가 iPhone 위치 권한을 직접 선택했고 이후 현재 위치 주변으로 이동해 반경 2km 조회와 빈 결과 표시가 완료됐다. 실제 좌표와 현재 위치 화면은 증거 파일에 저장하지 않았다. 권한 거부·재허용은 시험하지 않았다.
+- Device Hub의 클릭·드래그가 실기기에 반영되지 않아 실기기 마커 상세·지도 이동 재검색은 사용자 수동 확인을 요청했다. 브라우저 성공을 실기기 조작 성공으로 대신 기록하지 않는다.
+- [지도 인증 성공 요약](verification/cheap-meals-map-success-2026-10-29.json), [실기기 지도](verification/cheap-meals-iphone-map-2026-10-29.png), [브라우저 재검색](verification/cheap-meals-browser-map-requery-2026-10-29.png)을 보존한다. 이번 변경은 검증 문서·증거만이며 프론트 소스, Xcode·서명·Release 및 상위 팀 저장소를 변경하지 않았다. 원격 push/merge/배포하지 않았다.

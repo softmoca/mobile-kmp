@@ -54,7 +54,7 @@ npm --prefix .tools/thrifty-preview/frontend ci
 JACHWI_LOCAL_ORIGIN=https://192.168.3.253:3443 npm run dev:preview
 ```
 
-Xcode Debug 실행 환경 `JACHWI_WEB_URL`을 같은 HTTPS origin으로 지정한다. 기존 인증서·ignored 환경설정이 필요하며 IP가 바뀌면 인증서 SAN과 네이버 허용 URL도 갱신한다. 새 IP 지도 허용 등록은 사용자 확인이 남아 있다. `npm run verify:cheap-meals-api`로 네 API를 검증하고 `npm run preview:save`로 소스를 `preview/cheap-meals.patch`에 저장한다.
+Xcode Debug 실행 환경 `JACHWI_WEB_URL`을 같은 HTTPS origin으로 지정한다. 기존 인증서·ignored 환경설정이 필요하며 IP가 바뀌면 인증서 SAN과 네이버 허용 URL도 갱신한다. 10월 29일 사용자 등록 주소를 `192.168.3.255`에서 `192.168.3.253`으로 정정한 뒤 실제 iPhone과 브라우저의 지도 표시를 확인했다. `npm run verify:cheap-meals-api`로 네 API를 검증하고 `npm run preview:save`로 소스를 `preview/cheap-meals.patch`에 저장한다.
 
 실행·복구·수동 QA·실제 API와 제약은 **[저렴한 한 끼 찾기 안내](docs/CHEAP_MEALS.md)**를 따른다. 세븐일레븐 0건은 현재 dev 데이터의 미수집 상태다. 과거 알뜰 지도 기록은 [THRIFTY_PREVIEW](docs/THRIFTY_PREVIEW.md)에 남겼다.
 

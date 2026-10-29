@@ -1,0 +1,39 @@
+{
+  "verifiedAt": "2026-10-29T13:01:17.308563+09:00",
+  "previewOrigin": "https://192.168.3.253:3443",
+  "userReportedCorrection": {
+    "from": "192.168.3.255",
+    "to": "192.168.3.253"
+  },
+  "auth": {
+    "httpStatus": 200,
+    "result": true,
+    "error": null
+  },
+  "browser": {
+    "tilesAndMarkers": "passed",
+    "markerDetail": "passed",
+    "dragAndRequery": "passed",
+    "requeryChangedStores": true,
+    "warningErrorLogCount": 0
+  },
+  "physicalDevice": {
+    "model": "iPhone 12 mini",
+    "os": "27.0.1",
+    "tilesAndMarkers": "visually verified",
+    "radiusCircle": "visually verified",
+    "locationPermissionHandledBy": "user",
+    "currentLocationQuery": "visually verified completed with empty result at radius 2000",
+    "markerDetailAndDragRequery": "awaiting user manual verification; Device Hub input not reflected"
+  },
+  "preciseLocationPersisted": false,
+  "credentialsPersisted": false,
+  "sourceOrNativeConfigChanged": false,
+  "notVerified": [
+    "physical marker detail and drag/requery",
+    "location permission denial/regrant",
+    "phone call",
+    "large text/landscape",
+    "iOS 16"
+  ]
+}

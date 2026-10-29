@@ -68,7 +68,7 @@ DEVICECTL_CHILD_JACHWI_WEB_URL=https://192.168.3.253:3443 \
 9. React 파일을 수정해 HMR/새로고침 반영을 확인한다. HMR의 전체 reload가 발생하면 필터는 초기화될 수 있다. 일반적인 카테고리 이동의 상태 보존과 구분한다.
 10. 로컬 모드를 끝내려면 서버를 종료하고 Xcode 실행 환경변수를 끈 뒤 Run한다. 기본 dev 웹으로 돌아간다.
 
-네이버 콘솔의 같은 Maps Application → Web 서비스 URL에 **`http://192.168.3.253`** 등록이 필요하다(포트/경로 제외, 기존 URL 유지). 이전 IP의 등록으로 새 IP가 허용되지는 않는다. 이 설정은 사용자가 직접 확인한다. 사용자는 10월 29일 새 IP 등록 완료를 알렸으나, 아래 재검증에서는 아직 인증 오류가 발생했다.
+네이버 콘솔의 같은 Maps Application → Web 서비스 URL에 **`http://192.168.3.253`** 등록이 필요하다(포트/경로 제외, 기존 URL 유지). 이전 IP의 등록으로 새 IP가 허용되지는 않는다. 이 설정은 사용자가 직접 확인한다. 사용자가 처음에는 `192.168.3.255`로 등록했다고 확인하고 `192.168.3.253`으로 정정했다. 정정 뒤 브라우저와 실제 iPhone에서 지도 인증·타일·마커 표시가 성공했다.
 
 ## 실제 API 결과
 
@@ -90,12 +90,12 @@ DEVICECTL_CHILD_JACHWI_WEB_URL=https://192.168.3.253:3443 \
 - Android 단위 테스트·APK·lint와 KMP iOS Simulator framework 빌드 성공. iOS Simulator 앱·테스트 빌드는 위 XCTest에 포함됐다. 이번에는 네이티브 앱 코드를 바꾸지 않아 기존 서명 iPhone 앱에서 새 웹을 열었다.
 - 실제 iPhone 12 mini/iOS 27.0.1: 홈/전체, 실제 상품 이미지와 2,337개 목록, 상품 상세/스크롤/닫기, 세븐일레븐 미수집, 배달 108개·쿠팡이츠 37개·상세를 확인했다. 세븐일레븐 1+1과 쿠팡이츠 필터는 탭 왕복 후 유지됐다. React 수정 반영도 앱 재설치 없이 확인했다. 식당 판교 500m/1km/2km는 1/2/6곳으로 바뀌고 목록에서 업소 상세로 진입했다.
 - 브라우저 375px에서 가로 넘침 없음, 24→48개 더 보기와 탭 왕복 후 스크롤 위치 유지, 서울시청 주소 검색 후 22곳을 확인했다. 1024px 데스크톱 홈 배치도 확인했다.
-- **사용자의 새 IP 등록 완료 응답 이후에도 네이버 지도 인증이 실패한다.** Mac/iPhone을 재실행하고 지도 재시도 버튼으로 전체 새로고침해도 동일하다. SDK 다운로드는 HTTP 200, 별도 네이버 인증은 HTTP 401 / 오류 코드 `200` / `Authentication Failed`다. 브라우저의 `ncpKeyId`는 Preview `.env.local`과 일치하며 원본 팀 로컬 키와도 같다. 업소 API와 목록·상세는 동작한다. 저장된 Web 서비스 URL의 정확한 문자열 확인을 요청했으며 원인을 URL 오등록으로 단정하지 않는다. 이 상태를 지도 타일/마커/드래그 실기기 검증 완료로 표시하지 않는다.
-- 세븐일레븐 수집을 임의 실행하거나 데이터를 채우지 않았다. 실제 GPS/권한 거부·재허용, 전화 발신, iOS 16, 큰 글꼴·가로 모드, Android 실기기는 미검증이다.
+- **네이버 지도 인증 해결:** 사용자가 등록 주소 끝자리를 `255`에서 `253`으로 정정한 뒤 인증 응답은 HTTP 200 / `result: true`가 됐다. 브라우저와 실제 iPhone 12 mini에서 타일·업소 마커·반경 원이 표시됐다. 브라우저에서는 마커로 업소 상세를 열고 지도 드래그 후 재검색해 목록이 다른 업소로 갱신되는 것을 확인했다. 브라우저 warning/error 로그는 0건이었다. iPhone 마커 선택·드래그 재검색은 Device Hub의 입력 미반영으로 사용자 수동 확인을 요청했다.
+- 사용자가 iPhone 위치 권한을 직접 선택한 뒤 화면이 현재 위치 주변으로 이동하고 2km 조회가 완료되어 빈 결과를 표시하는 것을 확인했다. 정밀 좌표나 현재 위치 화면은 검증 파일에 저장하지 않았다. 권한 거부·재허용, 전화 발신, iOS 16, 큰 글꼴·가로 모드, Android 실기기는 미검증이다. 세븐일레븐 수집을 임의 실행하거나 데이터를 채우지 않았다.
 
 증거: [iPhone 전체](verification/cheap-meals-iphone-overview-2026-10-29.png), [상품](verification/cheap-meals-iphone-products-2026-10-29.png), [상품 상세](verification/cheap-meals-iphone-product-detail-2026-10-29.png), [세븐일레븐](verification/cheap-meals-iphone-seven-empty-2026-10-29.png), [배달](verification/cheap-meals-iphone-delivery-2026-10-29.png), [할인 상세](verification/cheap-meals-iphone-delivery-detail-2026-10-29.png). Device Hub의 실제 iPhone 미러링 원본이며 Simulator 이미지와 구분한다.
 
-추가 상태와 검사 수치는 [검증 요약 JSON](verification/cheap-meals-results-2026-10-29.json)에 있다. 해당 기록 작성 당시에는 Mac 잠금으로 마지막 추가 UI 확인을 멈췄다. 이후 사용자가 잠금을 해제해 현재 브라우저·iPhone 재검증을 수행했다. 최신 [지도 인증 재검증](verification/cheap-meals-map-registration-2026-10-29.json)과 [실기기 화면](verification/cheap-meals-iphone-map-auth-after-registration-2026-10-29.png)을 함께 참고한다.
+추가 상태와 검사 수치는 [검증 요약 JSON](verification/cheap-meals-results-2026-10-29.json)에 있다. 해당 기록 작성 당시에는 Mac 잠금으로 마지막 추가 UI 확인을 멈췄다. 이후 사용자가 잠금을 해제해 현재 브라우저·iPhone 재검증을 수행했다. 정정 전 [인증 오류 기록](verification/cheap-meals-map-registration-2026-10-29.json)은 과거 상태다. 최신 [지도 인증 성공 기록](verification/cheap-meals-map-success-2026-10-29.json), [실기기 지도](verification/cheap-meals-iphone-map-2026-10-29.png), [브라우저 재검색](verification/cheap-meals-browser-map-requery-2026-10-29.png)을 참고한다.
 
 로그는 Git 제외 `.tools/cheap-meals-20261029/`의 `full-tests.log`, `final-targeted-tests.log`, `final-lint.log`, `final-format.log`, `final-typecheck.log`, `final-build.log`, `gradle.log`, `ios-tests.log`, `ios-tests.xcresult`에 있다.
 
