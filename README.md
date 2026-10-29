@@ -43,6 +43,20 @@ xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosAppDevSmoke \
 - **배포 dev 모드:** 웹이 dev에 배포된 후 당김 새로고침 또는 종료·재실행. 앱 재빌드는 필요 없다. 백그라운드에서 돌아올 때는 작성 중인 입력을 지키기 위해 자동 새로고침하지 않는다.
 - **선택적 로컬 모드:** [HTTPS 로컬 개발 안내](docs/WEBVIEW_LOCAL_DEVELOPMENT.md)에 따라 개인 저장소에서 `npm run dev:web`를 실행하고 Xcode Debug 실행 환경에 `JACHWI_WEB_URL`을 지정한다. HTTP 주소는 거부한다. Release는 이 환경변수를 무시하고 팀의 운영 웹 주소만 사용한다. 이번 검증에서 운영 웹/API는 호출하지 않는다.
 
+## 알뜰 지도 Preview
+
+`codex/thrifty-preview`에서는 최신 팀 develop을 `.tools/thrifty-preview/`에 별도로 복제하고 알뜰 프로토타입을 이식했다. 팀 저장소를 수정하거나 dev에 배포하지 않는다. 지도 안의 **알뜰**, 500m/1km/2km, 업소 마커·목록·메뉴/가격·주소 상세를 실제 dev API와 연결한다. Preview 모바일 웹에는 요청한 **홈·체크리스트·지도·마이** 네 탭을 둔다.
+
+```sh
+npm run preview:prepare
+npm --prefix .tools/thrifty-preview/frontend ci
+# 인증서와 ignored frontend/.env.local 준비 후
+JACHWI_LOCAL_ORIGIN=https://<Mac-LAN-IP>:3443 npm run dev:preview
+npm run verify:preview-api
+```
+
+Xcode의 `JACHWI_WEB_URL`을 같은 HTTPS origin으로 지정해 Run한다. 변수를 끄면 기존 dev 웹이다. 지도 키의 로컬 호스트 허용과 기기 인증서 신뢰가 필요하다. 이 설정 전의 API 성공을 지도 배경/실기기 검증 완료로 보지 않는다. [실행·복귀·재설치·검증 안내](docs/THRIFTY_PREVIEW.md)를 따른다. `.tools`의 React 편집 내용을 보존하려면 `npm run preview:save`로 `preview/thrifty.patch`를 갱신한다.
+
 ## Android와 기존 KMP
 
 Android는 기존 Compose 구현을 유지한다. JDK 21과 개인 `local.properties`의 Android SDK 경로가 필요하다.
@@ -55,7 +69,7 @@ Android WebView 전환은 후속 작업이다. `IOSServices.swift`와 Kotlin iOS
 
 ## 문서
 
-- [작업 기록](docs/WORK_LOG.md)
+- [WORK_LOG](docs/WORK_LOG.md): 작업별 변경 내용·검증 상태·후속 확인 기록
 
 - [WEBVIEW_ARCHITECTURE](docs/WEBVIEW_ARCHITECTURE.md): UI 단일 소스, URL·쿠키·PDF 정책, Android 확장
 - [WEBVIEW_LOCAL_DEVELOPMENT](docs/WEBVIEW_LOCAL_DEVELOPMENT.md): HTTPS·API 프록시·HMR·네이버 지도 제약

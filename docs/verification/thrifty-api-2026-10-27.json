@@ -1,0 +1,64 @@
+{
+  "health": "UP",
+  "deployedCommit": "43b8d66352564e16af5db5c63585f565b7756056",
+  "unauthenticatedStatus": 401,
+  "refreshRestoredSameMember": true,
+  "secureHttpOnlyCookie": true,
+  "invalidRadiusStatus": 400,
+  "queries": [
+    {
+      "area": "서울 시청",
+      "radius": 500,
+      "count": 2,
+      "dataAsOf": "2026-06-30"
+    },
+    {
+      "area": "서울 시청",
+      "radius": 1000,
+      "count": 22,
+      "dataAsOf": "2026-06-30"
+    },
+    {
+      "area": "서울 시청",
+      "radius": 2000,
+      "count": 75,
+      "dataAsOf": "2026-06-30"
+    },
+    {
+      "area": "강남역",
+      "radius": 500,
+      "count": 7,
+      "dataAsOf": "2026-06-30"
+    },
+    {
+      "area": "강남역",
+      "radius": 1000,
+      "count": 29,
+      "dataAsOf": "2026-06-30"
+    },
+    {
+      "area": "강남역",
+      "radius": 2000,
+      "count": 66,
+      "dataAsOf": "2026-06-30"
+    },
+    {
+      "area": "해상 빈 결과",
+      "radius": 500,
+      "count": 0,
+      "dataAsOf": "2026-06-30"
+    },
+    {
+      "area": "해상 빈 결과",
+      "radius": 1000,
+      "count": 0,
+      "dataAsOf": "2026-06-30"
+    },
+    {
+      "area": "해상 빈 결과",
+      "radius": 2000,
+      "count": 0,
+      "dataAsOf": "2026-06-30"
+    }
+  ]
+}

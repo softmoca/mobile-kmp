@@ -1,0 +1,2344 @@
+diff --git a/frontend/src/app/layouts/mobile-navigation-layout/MobileNavigationLayout.module.css b/frontend/src/app/layouts/mobile-navigation-layout/MobileNavigationLayout.module.css
+new file mode 100644
+index 0000000..9a14479
+--- /dev/null
++++ b/frontend/src/app/layouts/mobile-navigation-layout/MobileNavigationLayout.module.css
+@@ -0,0 +1,38 @@
++.root {
++  display: flex;
++  flex-direction: column;
++  height: 100dvh;
++  overflow: hidden;
++}
++.content {
++  flex: 1;
++  min-height: 0;
++  overflow-y: auto;
++}
++.content > [data-design-shell] {
++  height: 100%;
++}
++.navigation {
++  flex: none;
++  display: grid;
++  grid-template-columns: repeat(4, minmax(0, 1fr));
++  min-height: calc(4rem + env(safe-area-inset-bottom));
++  padding-bottom: env(safe-area-inset-bottom);
++  background: var(--color-navigation-surface, #fff);
++  border-top: 1px solid var(--color-border);
++  z-index: 100;
++}
++.navigation a {
++  display: grid;
++  align-content: center;
++  justify-items: center;
++  gap: 0.2rem;
++  color: var(--color-muted);
++  font-size: 0.68rem;
++  font-weight: 800;
++  text-decoration: none;
++}
++.navigation a[aria-current='page'] {
++  color: var(--color-on-primary);
++  background: var(--color-primary);
++}
+diff --git a/frontend/src/app/layouts/mobile-navigation-layout/MobileNavigationLayout.tsx b/frontend/src/app/layouts/mobile-navigation-layout/MobileNavigationLayout.tsx
+new file mode 100644
+index 0000000..9106262
+--- /dev/null
++++ b/frontend/src/app/layouts/mobile-navigation-layout/MobileNavigationLayout.tsx
+@@ -0,0 +1,40 @@
++import { NavLink, Outlet, useLocation, useOutletContext } from 'react-router-dom';
++
++import type { Member } from '@/features/auth/model/Member';
++import useIsDesktop from '@/shared/lib/hooks/useIsDesktop';
++import Icon, { type IconName } from '@/shared/ui/icon/Icon';
++
++import styles from './MobileNavigationLayout.module.css';
++
++const links: { to: string; label: string; icon: IconName }[] = [
++  { to: '/', label: '홈', icon: 'home' },
++  { to: '/checklists', label: '체크리스트', icon: 'checklist' },
++  { to: '/map', label: '지도', icon: 'map' },
++  { to: '/me', label: '마이', icon: 'user' },
++];
++
++/** 개인 Preview의 네 가지 웹 탭. 폼·상세와 데스크탑은 기존 전체 화면을 유지한다. */
++const MobileNavigationLayout = () => {
++  const member = useOutletContext<Member>();
++  const { pathname } = useLocation();
++  const isDesktop = useIsDesktop();
++  const showNavigation = !isDesktop && ['/', '/checklists', '/map', '/me', '/properties'].includes(pathname);
++  if (!showNavigation) return <Outlet context={member} />;
++  return (
++    <div className={styles.root}>
++      <div className={styles.content}>
++        <Outlet context={member} />
++      </div>
++      <nav className={styles.navigation} aria-label="주요 메뉴">
++        {links.map(({ to, label, icon }) => (
++          <NavLink key={to} to={to} end={to === '/'}>
++            <Icon name={icon} size={22} />
++            <span>{label}</span>
++          </NavLink>
++        ))}
++      </nav>
++    </div>
++  );
++};
++
++export default MobileNavigationLayout;
+diff --git a/frontend/src/app/router/AppRoutes.tsx b/frontend/src/app/router/AppRoutes.tsx
+index 8ae455b..51fa30b 100644
+--- a/frontend/src/app/router/AppRoutes.tsx
++++ b/frontend/src/app/router/AppRoutes.tsx
+@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
+ import { lazy } from 'react';
+ import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom';
+ 
++import MobileNavigationLayout from '@/app/layouts/mobile-navigation-layout/MobileNavigationLayout';
+ import PropertyAppLayout from '@/app/layouts/property-app-layout/PropertyAppLayout';
+ import PublicExploreLayout from '@/app/layouts/public-explore-layout/PublicExploreLayout';
+ import { isChecklistStage } from '@/features/checklist/model/checklist';
+@@ -94,33 +95,35 @@ const AppRoutes = () => (
+     <Route path="/login" element={<Navigate to="/" replace />} />
+     {/* 첫 주소(`/`)를 포함한 회원 화면은 자동 로그인(복원 또는 익명 회원 생성)을 마친 뒤 그린다. */}
+     <Route element={<ProtectedRoute />}>
+-      <Route path="/" element={lazyPage(<DesignHomePage />)} />
+-      <Route path="/properties/:propertyId?" element={<RecordsRoute />}>
+-        <Route index element={lazyPage(<PropertyDetailPage />)} />
+-      </Route>
+-      <Route element={<PropertyAppLayout />}>
+-        <Route path="/properties/new" element={lazyPage(<CreatePropertyPage />)} />
+-        <Route path="/properties/:propertyId/edit" element={lazyPage(<EditPropertyPage />)} />
+-        <Route path="/properties/:propertyId/photos" element={lazyPage(<PropertyPhotosPage />)} />
+-        <Route path="/properties/:propertyId/memo" element={lazyPage(<PropertyMemoPage />)} />
+-        <Route path="/properties/:propertyId/nearby" element={lazyPage(<NearbyAnalysisPage />)} />
+-        <Route
+-          path="/properties/:propertyId/active-checklists/:stage"
+-          element={lazyPage(<PropertyActiveChecklistPage />)}
+-        />
+-        <Route
+-          path="/properties/:propertyId/checklists/:propertyChecklistId"
+-          element={lazyPage(<PropertyChecklistPage />)}
+-        />
+-        <Route path="/checklists" element={lazyPage(<ChecklistListPage />)} />
+-        <Route path="/checklists/new" element={lazyPage(<CreateChecklistPage />)} />
+-        <Route path="/checklists/:resource" element={lazyPage(<ChecklistResourceRoute />)} />
+-        <Route path="/me" element={lazyPage(<MyPage />)} />
+-        <Route path="/map/:propertyId?" element={lazyPage(<MapPage />)} />
+-        <Route path="/map/select-location" element={lazyPage(<MapLocationSelectPage />)} />
+-        <Route path="/compare" element={lazyPage(<PropertyComparePage />)} />
+-        <Route path="/export" element={lazyPage(<UpcomingFeaturePage feature="export" />)} />
+-        <Route path="/tips" element={lazyPage(<UpcomingFeaturePage feature="tips" />)} />
++      <Route element={<MobileNavigationLayout />}>
++        <Route path="/" element={lazyPage(<DesignHomePage />)} />
++        <Route path="/properties/:propertyId?" element={<RecordsRoute />}>
++          <Route index element={lazyPage(<PropertyDetailPage />)} />
++        </Route>
++        <Route element={<PropertyAppLayout />}>
++          <Route path="/properties/new" element={lazyPage(<CreatePropertyPage />)} />
++          <Route path="/properties/:propertyId/edit" element={lazyPage(<EditPropertyPage />)} />
++          <Route path="/properties/:propertyId/photos" element={lazyPage(<PropertyPhotosPage />)} />
++          <Route path="/properties/:propertyId/memo" element={lazyPage(<PropertyMemoPage />)} />
++          <Route path="/properties/:propertyId/nearby" element={lazyPage(<NearbyAnalysisPage />)} />
++          <Route
++            path="/properties/:propertyId/active-checklists/:stage"
++            element={lazyPage(<PropertyActiveChecklistPage />)}
++          />
++          <Route
++            path="/properties/:propertyId/checklists/:propertyChecklistId"
++            element={lazyPage(<PropertyChecklistPage />)}
++          />
++          <Route path="/checklists" element={lazyPage(<ChecklistListPage />)} />
++          <Route path="/checklists/new" element={lazyPage(<CreateChecklistPage />)} />
++          <Route path="/checklists/:resource" element={lazyPage(<ChecklistResourceRoute />)} />
++          <Route path="/me" element={lazyPage(<MyPage />)} />
++          <Route path="/map/:propertyId?" element={lazyPage(<MapPage />)} />
++          <Route path="/map/select-location" element={lazyPage(<MapLocationSelectPage />)} />
++          <Route path="/compare" element={lazyPage(<PropertyComparePage />)} />
++          <Route path="/export" element={lazyPage(<UpcomingFeaturePage feature="export" />)} />
++          <Route path="/tips" element={lazyPage(<UpcomingFeaturePage feature="tips" />)} />
++        </Route>
+       </Route>
+     </Route>
+     <Route path="*" element={lazyPage(<NotFoundPage />)} />
+diff --git a/frontend/src/features/good-price/api/goodPriceApi.ts b/frontend/src/features/good-price/api/goodPriceApi.ts
+new file mode 100644
+index 0000000..dcf8733
+--- /dev/null
++++ b/frontend/src/features/good-price/api/goodPriceApi.ts
+@@ -0,0 +1,75 @@
++import { useQuery } from '@tanstack/react-query';
++
++import { apiRequest } from '@/features/auth/api/apiClient';
++import { readArray, readInteger, readNullableString, readRecord, readString } from '@/shared/api/responseParsers';
++import { usePublicConfig } from '@/shared/config/PublicConfigContext';
++import type { PublicConfig } from '@/shared/config/publicConfigTypes';
++
++import type { GoodPriceResult, GoodPriceStore } from '../model/GoodPriceStore';
++
++const coordinate = (record: Record<string, unknown>, key: string): number => {
++  const value = record[key];
++  if (typeof value !== 'number' || !Number.isFinite(value)) throw new Error('업소 좌표가 올바르지 않습니다.');
++  return value;
++};
++
++const parseStore = (value: unknown): GoodPriceStore => {
++  const store = readRecord(value);
++  return {
++    id: readInteger(store, 'id'),
++    name: readString(store, 'name'),
++    businessType: readString(store, 'businessType'),
++    phone: readNullableString(store, 'phone'),
++    address: readString(store, 'address'),
++    latitude: coordinate(store, 'latitude'),
++    longitude: coordinate(store, 'longitude'),
++    distanceMeters: readInteger(store, 'distanceMeters'),
++    menus: readArray(store, 'menus').map((value) => {
++      const menu = readRecord(value);
++      return { name: readString(menu, 'name'), price: readNullableString(menu, 'price') };
++    }),
++  };
++};
++
++export const parseGoodPriceResult = (value: unknown): GoodPriceResult => {
++  const result = readRecord(value);
++  const center = readRecord(result.center);
++  const radius = readInteger(result, 'radius');
++  if (radius !== 500 && radius !== 1000 && radius !== 2000) throw new Error('조회 반경이 올바르지 않습니다.');
++  const stores = readArray(result, 'stores').map(parseStore);
++  const count = readInteger(result, 'count');
++  if (count !== stores.length) throw new Error('업소 개수가 응답과 일치하지 않습니다.');
++  return {
++    center: { latitude: coordinate(center, 'latitude'), longitude: coordinate(center, 'longitude') },
++    radius,
++    count,
++    dataAsOf: readNullableString(result, 'dataAsOf'),
++    stores,
++  };
++};
++
++export const fetchGoodPriceStores = (
++  config: PublicConfig,
++  center: GoodPriceResult['center'],
++  radius: GoodPriceResult['radius'],
++  signal?: AbortSignal,
++) =>
++  apiRequest({
++    config,
++    path: `/api/maps/good-price-stores?latitude=${center.latitude}&longitude=${center.longitude}&radius=${radius}`,
++    signal,
++    parseData: parseGoodPriceResult,
++  });
++
++export const useGoodPriceStores = (center: GoodPriceResult['center'] | null, radius: GoodPriceResult['radius']) => {
++  const config = usePublicConfig();
++  return useQuery({
++    queryKey: ['good-price-stores', config.apiBaseUrl, center?.latitude, center?.longitude, radius],
++    enabled: center !== null,
++    queryFn: ({ signal }) => {
++      if (center === null) throw new Error('동네를 먼저 선택해 주세요.');
++      return fetchGoodPriceStores(config, center, radius, signal);
++    },
++    staleTime: 60_000,
++  });
++};
+diff --git a/frontend/src/features/good-price/model/GoodPriceStore.ts b/frontend/src/features/good-price/model/GoodPriceStore.ts
+new file mode 100644
+index 0000000..aa722db
+--- /dev/null
++++ b/frontend/src/features/good-price/model/GoodPriceStore.ts
+@@ -0,0 +1,22 @@
++export type GoodPriceStore = {
++  id: number;
++  name: string;
++  businessType: string;
++  phone: string | null;
++  address: string;
++  latitude: number;
++  longitude: number;
++  distanceMeters: number;
++  menus: Array<{ name: string; price: string | null }>;
++};
++
++export type GoodPriceResult = {
++  center: { latitude: number; longitude: number };
++  radius: 500 | 1000 | 2000;
++  count: number;
++  dataAsOf: string | null;
++  stores: GoodPriceStore[];
++};
++
++export const formatStoreDistance = (meters: number): string =>
++  meters < 1000 ? `${meters}m` : `${(meters / 1000).toFixed(1)}km`;
+diff --git a/frontend/src/features/map/hooks/useNaverMap.ts b/frontend/src/features/map/hooks/useNaverMap.ts
+index 4c7b916..9a71e38 100644
+--- a/frontend/src/features/map/hooks/useNaverMap.ts
++++ b/frontend/src/features/map/hooks/useNaverMap.ts
+@@ -5,7 +5,13 @@ import { usePublicConfig } from '@/shared/config/PublicConfigContext';
+ import { clampToSouthKorea } from '../lib/mapLocation';
+ import { markerScale, markerSignature, markerZIndex } from '../lib/mapMarkerPresentation';
+ import { createMapRegionLayer, READY_TIMEOUT_MS } from '../lib/mapRegionLayer';
+-import { type LiveMap, type LiveOverlay, naverEngine } from '../lib/naverMapEngine';
++import {
++  isNaverSdkAvailable,
++  type LiveMap,
++  type LiveOverlay,
++  NAVER_AUTH_FAILURE_EVENT,
++  naverEngine,
++} from '../lib/naverMapEngine';
+ import type { MapCanvasProps } from '../model/MapCanvas';
+ import { createMapMarkerElement } from '../ui/map-marker/MapMarkerView';
+ 
+@@ -99,6 +105,22 @@ const useNaverMap = ({
+     let listeners: unknown[] = [];
+     let readyFrame: number | null = null;
+ 
++    const handleAuthFailure = () => {
++      // 폐기된 SDK를 호출하지 않고 지도만 중단하여 실제 API 목록·상세를 계속 사용할 수 있게 한다.
++      if (readyFrame !== null) window.cancelAnimationFrame(readyFrame);
++      readyFrame = null;
++      mapRef.current = null;
++      map = null;
++      regionLayerRef.current?.dispose(true);
++      regionLayerRef.current = null;
++      overlaysRef.current.clear();
++      circlesRef.current = [];
++      containerRef.current?.replaceChildren();
++      setMapReady(false);
++      setRenderReady(false);
++      setSdkError(true);
++    };
++    window.addEventListener(NAVER_AUTH_FAILURE_EVENT, handleAuthFailure);
+     setSdkError(false);
+     setMapReady(false);
+     setRenderReady(false);
+@@ -120,7 +142,7 @@ const useNaverMap = ({
+           }),
+           engine.addListener(map, 'idle', () => {
+             setGestureActive(false);
+-            if (map === null) return;
++            if (map === null || !isNaverSdkAvailable()) return;
+             setSettledVersion((current) => current + 1);
+             const nextCenter = engine.getCenter(map);
+             callbackRef.current.onCenterChange?.(nextCenter.latitude, nextCenter.longitude);
+@@ -148,22 +170,23 @@ const useNaverMap = ({
+ 
+     return () => {
+       disposed = true;
++      window.removeEventListener(NAVER_AUTH_FAILURE_EVENT, handleAuthFailure);
+       if (readyFrame !== null) window.cancelAnimationFrame(readyFrame);
+       listeners.forEach((listener) => engine.removeListener(listener));
+       listeners = [];
+       setGestureActive(false);
+-      overlaysRef.current.forEach(({ overlay }) => overlay.setMap(null));
++      if (isNaverSdkAvailable()) overlaysRef.current.forEach(({ overlay }) => overlay.setMap(null));
+       overlaysRef.current.clear();
+-      circlesRef.current.forEach((circle) => circle.setMap(null));
++      if (isNaverSdkAvailable()) circlesRef.current.forEach((circle) => circle.setMap(null));
+       circlesRef.current = [];
+       circleSignatureRef.current = '';
+-      if (map !== null) engine.destroy(map);
++      if (map !== null && isNaverSdkAvailable()) engine.destroy(map);
+       mapRef.current = null;
+     };
+   }, [engine, liveMode]);
+ 
+   useEffect(() => {
+-    if (animateView || !liveMode || !mapReady || mapRef.current === null) return;
++    if (animateView || !liveMode || !mapReady || mapRef.current === null || !isNaverSdkAvailable()) return;
+     const current = engine.getCenter(mapRef.current);
+     if (
+       Math.abs(current.latitude - boundedCenter.latitude) < 0.0000001 &&
+@@ -175,7 +198,7 @@ const useNaverMap = ({
+ 
+   useEffect(() => {
+     const map = mapRef.current;
+-    if (!animateView || !liveMode || !mapReady || map === null) return;
++    if (!animateView || !liveMode || !mapReady || map === null || !isNaverSdkAvailable()) return;
+     const current = engine.getCenter(map);
+     if (
+       Math.abs(current.latitude - boundedCenter.latitude) < 0.0000001 &&
+@@ -203,7 +226,14 @@ const useNaverMap = ({
+       relayoutFrame = window.requestAnimationFrame(() => {
+         relayoutFrame = null;
+         const container = containerRef.current;
+-        if (container === null || container.clientWidth === 0 || container.clientHeight === 0) return;
++        if (
++          container === null ||
++          container.clientWidth === 0 ||
++          container.clientHeight === 0 ||
++          mapRef.current !== map ||
++          !isNaverSdkAvailable()
++        )
++          return;
+         const size = `${container.clientWidth}x${container.clientHeight}`;
+         if (size === previousSize) return;
+         previousSize = size;
+@@ -220,13 +250,21 @@ const useNaverMap = ({
+ 
+   useEffect(() => {
+     const map = mapRef.current;
+-    if (animateView || !liveMode || !mapReady || map === null || engine.getZoom(map) === level) return;
++    if (
++      animateView ||
++      !liveMode ||
++      !mapReady ||
++      map === null ||
++      !isNaverSdkAvailable() ||
++      engine.getZoom(map) === level
++    )
++      return;
+     engine.setZoom(map, level);
+   }, [engine, level, liveMode, mapReady, animateView]);
+ 
+   useEffect(() => {
+     const map = mapRef.current;
+-    if (!liveMode || !mapReady || map === null || gestureActiveRef.current) return;
++    if (!liveMode || !mapReady || map === null || gestureActiveRef.current || !isNaverSdkAvailable()) return;
+     // 달라진 마커만 다시 그린다. 전부 지웠다 만들면 지도를 옮길 때마다 깜빡인다.
+     const previous = overlaysRef.current;
+     const next = new Map<string, { signature: string; overlay: LiveOverlay; content: HTMLElement }>();
+@@ -261,11 +299,11 @@ const useNaverMap = ({
+ 
+   useEffect(() => {
+     const map = mapRef.current;
+-    if (!liveMode || !mapReady || map === null || gestureActiveRef.current) return;
++    if (!liveMode || !mapReady || map === null || gestureActiveRef.current || !isNaverSdkAvailable()) return;
+     const signature = `${circleRadii}:${radiusCenter.latitude}:${radiusCenter.longitude}`;
+     if (signature === circleSignatureRef.current) return;
+     circleSignatureRef.current = signature;
+-    circlesRef.current.forEach((circle) => circle.setMap(null));
++    if (isNaverSdkAvailable()) circlesRef.current.forEach((circle) => circle.setMap(null));
+     circlesRef.current = (circleRadii === '' ? [] : circleRadii.split(',').map(Number)).map((radius) =>
+       engine.createCircle(map, engine.latLng(radiusCenter.latitude, radiusCenter.longitude), radius),
+     );
+@@ -297,7 +335,9 @@ const useNaverMap = ({
+       content,
+       30,
+     );
+-    return () => overlay.setMap(null);
++    return () => {
++      if (isNaverSdkAvailable()) overlay.setMap(null);
++    };
+   }, [coordinateAction, engine, liveMode, mapReady]);
+ 
+   useEffect(() => {
+@@ -313,7 +353,7 @@ const useNaverMap = ({
+     );
+     regionLayerRef.current = layer;
+     return () => {
+-      layer.dispose();
++      layer.dispose(!isNaverSdkAvailable());
+       if (regionLayerRef.current === layer) regionLayerRef.current = null;
+     };
+   }, [engine, liveMode, mapReady]);
+diff --git a/frontend/src/features/map/lib/mapRegionLayer.ts b/frontend/src/features/map/lib/mapRegionLayer.ts
+index 8146a7f..24b9fb5 100644
+--- a/frontend/src/features/map/lib/mapRegionLayer.ts
++++ b/frontend/src/features/map/lib/mapRegionLayer.ts
+@@ -216,9 +216,9 @@ export const createMapRegionLayer = (
+       latest = { regions, selectedId };
+       apply();
+     },
+-    dispose: () => {
++    dispose: (sdkUnavailable = false) => {
+       cancelPending();
+-      entries.forEach(remove);
++      if (!sdkUnavailable) entries.forEach(remove);
+       entries.clear();
+     },
+   };
+diff --git a/frontend/src/features/map/lib/naverMapEngine.ts b/frontend/src/features/map/lib/naverMapEngine.ts
+index 9cddebc..bebc98e 100644
+--- a/frontend/src/features/map/lib/naverMapEngine.ts
++++ b/frontend/src/features/map/lib/naverMapEngine.ts
+@@ -6,14 +6,24 @@ const MIN_NAVER_ZOOM = 6;
+ const toNaverZoom = (level: number): number => clamp(NAVER_ZOOM_BASE - level, MIN_NAVER_ZOOM, 21);
+ const toMapLevel = (zoom: number): number => clamp(NAVER_ZOOM_BASE - zoom, 1, 14);
+ let naverSdkPromise: Promise<void> | null = null;
++let authFailed = false;
++export const NAVER_AUTH_FAILURE_EVENT = 'jachwi:naver-auth-failure';
++export const isNaverSdkAvailable = () => !authFailed && window.naver?.maps != null;
+ 
+ const loadNaverSdk = (clientId: string): Promise<void> => {
++  if (authFailed) return Promise.reject(new Error('Naver Maps 인증에 실패했습니다.'));
+   if (naverSdkPromise !== null) return naverSdkPromise;
+-  if (window.naver?.maps !== undefined) return Promise.resolve();
++  if (isNaverSdkAvailable()) return Promise.resolve();
+   naverSdkPromise = new Promise((resolve, reject) => {
++    // 인증 응답은 SDK ready 이후에도 도착하며, 실패하면 SDK가 내부 객체를 폐기한다.
++    window.navermap_authFailure = () => {
++      authFailed = true;
++      reject(new Error('Naver Maps 인증에 실패했습니다.'));
++      window.dispatchEvent(new Event(NAVER_AUTH_FAILURE_EVENT));
++    };
+     const existing = document.querySelector<HTMLScriptElement>('script[data-jachwi-naver-map]');
+     const ready = () => {
+-      if (window.naver?.maps === undefined) {
++      if (!isNaverSdkAvailable()) {
+         naverSdkPromise = null;
+         document.querySelector('script[data-jachwi-naver-map]')?.remove();
+         reject(new Error('Naver Maps SDK를 불러오지 못했습니다.'));
+@@ -126,7 +136,7 @@ export const naverEngine = (clientId: string, customStyleId?: string): LiveEngin
+   addListener: (map, event, callback) =>
+     window.naver!.maps.Event.addListener(map, event, (value) => callback(value?.coord?.lat(), value?.coord?.lng())),
+   removeListener: (listener) => {
+-    if (listener !== undefined && window.naver?.maps !== undefined) window.naver.maps.Event.removeListener(listener);
++    if (listener !== undefined && isNaverSdkAvailable()) window.naver!.maps.Event.removeListener(listener);
+   },
+   createOverlay: (map, marker, content, zIndex) => {
+     const overlay = new window.naver!.maps.OverlayView();
+diff --git a/frontend/src/features/map/model/Map.ts b/frontend/src/features/map/model/Map.ts
+index 74653af..5189f5f 100644
+--- a/frontend/src/features/map/model/Map.ts
++++ b/frontend/src/features/map/model/Map.ts
+@@ -12,7 +12,7 @@ export type MapMarker = {
+   caption?: string;
+   /** 매물 제목과 금액을 고정 카드로 표시할 때 사용한다. */
+   summary?: { amount: string };
+-  tone?: 'property' | 'current' | 'place' | 'selected' | 'cluster' | 'propertyCluster';
++  tone?: 'store' | 'property' | 'current' | 'place' | 'selected' | 'cluster' | 'propertyCluster';
+   category?: MapCategory;
+   count?: number;
+   placeId?: string;
+diff --git a/frontend/src/features/map/ui/map-category-rail/MapCategoryRail.tsx b/frontend/src/features/map/ui/map-category-rail/MapCategoryRail.tsx
+index 16b2fa8..b05a7e3 100644
+--- a/frontend/src/features/map/ui/map-category-rail/MapCategoryRail.tsx
++++ b/frontend/src/features/map/ui/map-category-rail/MapCategoryRail.tsx
+@@ -1,3 +1,5 @@
++import type { ReactNode } from 'react';
++
+ import { MAP_CATEGORY_OPTIONS } from '../../lib/mapPresentation';
+ import type { MapCategory } from '../../model/Map';
+ import MapCategoryIcon from '../map-category-icon/MapCategoryIcon';
+@@ -9,10 +11,23 @@ type MapCategoryRailProps = {
+   counts?: Partial<Record<MapCategory, number>>;
+   onToggle: (category: MapCategory) => void;
+   className?: string;
++  extraCategory?: { label: string; icon: ReactNode; isSelected: boolean; onToggle: () => void };
+ };
+ 
+-const MapCategoryRail = ({ selectedCategories, counts, onToggle, className }: MapCategoryRailProps) => (
++const MapCategoryRail = ({ selectedCategories, counts, onToggle, className, extraCategory }: MapCategoryRailProps) => (
+   <aside className={`${styles.rail} ${className ?? ''}`} aria-label="지도 시설 카테고리">
++    {extraCategory !== undefined && (
++      <button
++        type="button"
++        className={styles.categoryButton}
++        aria-label={extraCategory.label}
++        aria-pressed={extraCategory.isSelected}
++        onClick={extraCategory.onToggle}
++      >
++        {extraCategory.icon}
++        <span>{extraCategory.label}</span>
++      </button>
++    )}
+     {MAP_CATEGORY_OPTIONS.map((option) => {
+       const selected = selectedCategories.includes(option.value);
+       const count = counts?.[option.value];
+diff --git a/frontend/src/features/map/ui/map-marker/MapMarkerView.module.css b/frontend/src/features/map/ui/map-marker/MapMarkerView.module.css
+index a3af651..ef0982b 100644
+--- a/frontend/src/features/map/ui/map-marker/MapMarkerView.module.css
++++ b/frontend/src/features/map/ui/map-marker/MapMarkerView.module.css
+@@ -303,3 +303,17 @@ button.clusterMarker::before {
+ :global([data-map-gesture='true']) .markerCaption {
+   visibility: hidden;
+ }
++
++.storeMarker {
++  z-index: 6;
++  width: 2rem;
++  height: 2rem;
++  background: var(--color-brand-yellow);
++  color: var(--color-ink);
++}
++.storeMarker.activeMarker {
++  z-index: 10;
++  background: var(--color-ink);
++  color: var(--color-on-action);
++  outline-color: var(--color-brand-yellow);
++}
+diff --git a/frontend/src/features/map/ui/map-marker/MapMarkerView.tsx b/frontend/src/features/map/ui/map-marker/MapMarkerView.tsx
+index 8f0795e..c86443c 100644
+--- a/frontend/src/features/map/ui/map-marker/MapMarkerView.tsx
++++ b/frontend/src/features/map/ui/map-marker/MapMarkerView.tsx
+@@ -1,6 +1,7 @@
+ import { renderToStaticMarkup } from 'react-dom/server';
+ 
+ import logoImage from '@/shared/assets/jachwi-sunbae-goose.webp';
++import Icon from '@/shared/ui/icon/Icon';
+ 
+ import type { MapMarker } from '../../model/Map';
+ import MapCategoryIcon from '../map-category-icon/MapCategoryIcon';
+@@ -36,6 +37,7 @@ const markerClassName = (marker: MapMarker, selectedMarkerId: string | null | un
+     marker.tone === 'current' ? styles.currentMarker : '',
+     marker.tone === 'selected' ? styles.selectedMarker : '',
+     marker.tone === 'place' ? styles.placeMarker : '',
++    marker.tone === 'store' ? styles.storeMarker : '',
+     marker.tone === 'cluster' ? styles.clusterMarker : '',
+     marker.tone === 'propertyCluster' ? styles.propertyClusterMarker : '',
+     selectedMarkerId === marker.id ? styles.activeMarker : '',
+@@ -54,7 +56,9 @@ const MapMarkerView = ({ marker, selectedMarkerId = null, onSelectMarker }: MapM
+           <small title={marker.summary.amount}>{marker.summary.amount}</small>
+         </span>
+       )}
+-      {isCurrentLocationDot(marker) ? null : usesCategoryIcon(marker) && marker.category !== undefined ? (
++      {isCurrentLocationDot(marker) ? null : marker.tone === 'store' ? (
++        <Icon name="store" size={18} />
++      ) : usesCategoryIcon(marker) && marker.category !== undefined ? (
+         <MapCategoryIcon category={marker.category} className={styles.categoryIcon} />
+       ) : marker.tone === 'property' || marker.tone === 'selected' || marker.tone === 'propertyCluster' ? (
+         <img className={styles.markerPhoto} src={logoImage} alt="" draggable={false} decoding="async" />
+diff --git a/frontend/src/global.d.ts b/frontend/src/global.d.ts
+index fcd0e31..e31608b 100644
+--- a/frontend/src/global.d.ts
++++ b/frontend/src/global.d.ts
+@@ -11,6 +11,7 @@ declare const __ADMIN_BOUNDARY_BASE_URL__: string;
+ 
+ interface Window {
+   jachwiNaverSdkReady?: () => void;
++  navermap_authFailure?: () => void;
+   naver?: { maps: NaverMapsNamespace };
+ }
+ 
+diff --git a/frontend/src/pages/map/MapPage.tsx b/frontend/src/pages/map/MapPage.tsx
+index 4075833..6e99039 100644
+--- a/frontend/src/pages/map/MapPage.tsx
++++ b/frontend/src/pages/map/MapPage.tsx
+@@ -1,9 +1,10 @@
+-import { useParams } from 'react-router-dom';
++import { useParams, useSearchParams } from 'react-router-dom';
+ 
+ import PropertyDetailPage from '@/pages/property-detail/PropertyDetailPage';
+ import useIsDesktop from '@/shared/lib/hooks/useIsDesktop';
+ 
+ import MapDesktopPage from './desktop/MapDesktopPage';
++import MapThriftyPage from './MapThriftyPage';
+ import MapMobilePage from './mobile/MapMobilePage';
+ 
+ /**
+@@ -13,6 +14,8 @@ import MapMobilePage from './mobile/MapMobilePage';
+ const MapPage = () => {
+   const isDesktop = useIsDesktop();
+   const propertyId = useParams().propertyId;
++  const [params] = useSearchParams();
++  if (propertyId === undefined && params.get('mode') === 'thrifty') return <MapThriftyPage />;
+   if (isDesktop) return <MapDesktopPage />;
+   return propertyId === undefined ? <MapMobilePage /> : <PropertyDetailPage returnTo="/map" />;
+ };
+diff --git a/frontend/src/pages/map/MapThriftyPage.tsx b/frontend/src/pages/map/MapThriftyPage.tsx
+new file mode 100644
+index 0000000..9850c0e
+--- /dev/null
++++ b/frontend/src/pages/map/MapThriftyPage.tsx
+@@ -0,0 +1,110 @@
++import { useState } from 'react';
++import { useLocation, useNavigate } from 'react-router-dom';
++
++import type { MapCategory } from '@/features/map/model/Map';
++import MapCanvas from '@/features/map/ui/map-canvas/MapCanvas';
++import MapCategoryRail from '@/features/map/ui/map-category-rail/MapCategoryRail';
++import MapCurrentLocationButton from '@/features/map/ui/map-current-location-button/MapCurrentLocationButton';
++import MapRadiusSelector from '@/features/map/ui/map-radius-selector/MapRadiusSelector';
++import Icon from '@/shared/ui/icon/Icon';
++
++import useGoodPriceMap from './hooks/useGoodPriceMap';
++import { RADIUS_OPTIONS, radiusLabel } from './lib/mapRadius';
++import { readMapView, writeMapView } from './lib/mapViewState';
++import MapAddressSearch from './ui/map-address-search/MapAddressSearch';
++import MapGoodPriceLayer from './ui/map-good-price-layer/MapGoodPriceLayer';
++
++import styles from './MapPage.module.css';
++import controls from './ui/map-controls/MapControls.module.css';
++import stage from './ui/map-stage/MapStage.module.css';
++
++/** 프로토타입의 알뜰 화면만 조립한다. 최신 매물 지도와 인증/레이아웃은 그대로 사용한다. */
++const MapThriftyPage = () => {
++  const location = useLocation();
++  const navigate = useNavigate();
++  const [initialView] = useState(() => readMapView(location.key, location.state));
++  const [returnKey] = useState(location.key);
++  const exploration = useGoodPriceMap(
++    initialView === undefined ? undefined : { ...initialView.center, label: '지도에서 선택한 위치' },
++    initialView?.radius ?? 1000,
++  );
++  const [isLocationOpen, setLocationOpen] = useState(false);
++  const exit = (category?: MapCategory) => {
++    writeMapView(returnKey, {
++      center: exploration.viewport,
++      level: exploration.level,
++      selectedPropertyId: null,
++      nearbyAnchor: exploration.area,
++      hasNearbyAnchor: true,
++      radius: exploration.radius,
++      categories: category === undefined ? (initialView?.categories ?? []) : [category],
++      sheetStage: 'closed',
++    });
++    navigate('/map', { state: { mapViewKey: returnKey } });
++  };
++
++  return (
++    <main className={styles.page}>
++      <MapAddressSearch
++        isOpen={false}
++        locationLabel={exploration.area.label}
++        query=""
++        results={[]}
++        status="idle"
++        onOpen={() => setLocationOpen(true)}
++        onClose={() => setLocationOpen(false)}
++        onQueryChange={() => {}}
++        onSubmit={() => {}}
++        onSelect={() => {}}
++      />
++      <section ref={exploration.mapStageRef} className={stage.mapStage} aria-label="착한가격 가게 지도">
++        <MapCanvas
++          center={exploration.viewport}
++          markers={exploration.markers}
++          circles={[{ radiusMeters: exploration.radius, label: radiusLabel(exploration.radius) }]}
++          radiusCenter={exploration.area}
++          level={exploration.level}
++          showRadiusLabels={false}
++          interactive
++          selectedMarkerId={exploration.selectedStore === null ? undefined : `store-${exploration.selectedStore.id}`}
++          onSelectMarker={(marker) => exploration.openStore(Number(marker.id.slice('store-'.length)))}
++          onSelectLocation={exploration.moveMap}
++          onCenterChange={exploration.moveMap}
++          onLevelChange={exploration.changeLevel}
++        />
++        <MapRadiusSelector
++          className={controls.radiusSelector}
++          label="착한가격 가게 확인 반경"
++          options={RADIUS_OPTIONS.map((value) => ({
++            value,
++            label: radiusLabel(value),
++            isSelected: exploration.radius === value,
++          }))}
++          onSelect={exploration.selectRadius}
++        />
++        <MapCategoryRail
++          className={controls.categoryRail}
++          selectedCategories={[]}
++          onToggle={exit}
++          extraCategory={{
++            label: '알뜰',
++            icon: <Icon name="store" size={20} />,
++            isSelected: true,
++            onToggle: () => exit(),
++          }}
++        />
++        <div className={controls.locationControls}>
++          <MapCurrentLocationButton isLocating={exploration.isLocating} onClick={() => void exploration.locate()} />
++        </div>
++        <MapGoodPriceLayer
++          exploration={exploration}
++          isLocationOpen={isLocationOpen}
++          onOpenLocation={() => setLocationOpen(true)}
++          onCloseLocation={() => setLocationOpen(false)}
++        />
++      </section>
++    </main>
++  );
++};
++
++export default MapThriftyPage;
+diff --git a/frontend/src/pages/map/hooks/useGoodPriceMap.ts b/frontend/src/pages/map/hooks/useGoodPriceMap.ts
+new file mode 100644
+index 0000000..3ba8303
+--- /dev/null
++++ b/frontend/src/pages/map/hooks/useGoodPriceMap.ts
+@@ -0,0 +1,203 @@
++import { useEffect, useMemo, useRef, useState } from 'react';
++import { useSearchParams } from 'react-router-dom';
++
++import { useGoodPriceStores } from '@/features/good-price/api/goodPriceApi';
++import type { GoodPriceResult } from '@/features/good-price/model/GoodPriceStore';
++import type { MapCoordinate } from '@/features/map/lib/mapLocation';
++import {
++  coordinatesAreClose,
++  DEFAULT_MAP_CENTER,
++  isInSouthKorea,
++  requestCurrentMapLocation,
++} from '@/features/map/lib/mapLocation';
++import { getMapFocusCenter } from '@/features/map/lib/mapViewportFocus';
++import type { MapMarker } from '@/features/map/model/Map';
++
++import useMapSheet from './useMapSheet';
++
++export type NeighborhoodArea = MapCoordinate & { label: string };
++const AREA_KEY = 'jachwi-sunbae.neighborhoodArea';
++const readArea = (): NeighborhoodArea | null => {
++  try {
++    const value = JSON.parse(window.sessionStorage.getItem(AREA_KEY) ?? 'null') as Partial<NeighborhoodArea> | null;
++    if (
++      value !== null &&
++      typeof value.label === 'string' &&
++      typeof value.latitude === 'number' &&
++      typeof value.longitude === 'number'
++    ) {
++      const area = { label: value.label, latitude: value.latitude, longitude: value.longitude };
++      if (isInSouthKorea(area)) return area;
++    }
++  } catch {
++    /* 저장소가 없어도 동네 선택을 이어간다. */
++  }
++  return null;
++};
++
++const useGoodPriceMap = (initialArea?: NeighborhoodArea, initialRadius: GoodPriceResult['radius'] = 1000) => {
++  const [params, setParams] = useSearchParams();
++  const isActive = params.get('mode') === 'thrifty';
++  const [area, setArea] = useState(() => initialArea ?? readArea() ?? { ...DEFAULT_MAP_CENTER, label: '판교 주변' });
++  const [viewport, setViewport] = useState<MapCoordinate>(area);
++  const [radius, setRadius] = useState<GoodPriceResult['radius']>(initialRadius);
++  const [level, setLevel] = useState(initialRadius === 500 ? 5 : initialRadius === 1000 ? 6 : 7);
++  const sheet = useMapSheet(isActive, params.has('store') ? 'mid' : 'closed');
++  const mapStageRef = useRef<HTMLElement | null>(null);
++  const [isMapMoved, setMapMoved] = useState(false);
++  const [isLocating, setLocating] = useState(false);
++  const [locationError, setLocationError] = useState<string | null>(null);
++  const locationRequest = useRef(0);
++  useEffect(
++    () => () => {
++      locationRequest.current += 1;
++    },
++    [isActive],
++  );
++  const query = useGoodPriceStores(isActive ? area : null, radius);
++  const data = query.isError ? undefined : query.data;
++  const selectedStore = data?.stores.find((store) => String(store.id) === params.get('store')) ?? null;
++  const markers = useMemo<MapMarker[]>(
++    () =>
++      data?.stores.map((store) => ({
++        id: `store-${store.id}`,
++        latitude: store.latitude,
++        longitude: store.longitude,
++        label: `${store.name} 상세 보기`,
++        tone: 'store',
++        actionable: true,
++      })) ?? [],
++    [data],
++  );
++
++  const chooseArea = (next: NeighborhoodArea) => {
++    locationRequest.current += 1;
++    setLocating(false);
++    setLocationError(null);
++    setArea(next);
++    setViewport(next);
++    setMapMoved(false);
++    closeStore();
++    sheet.previewSheet();
++    try {
++      window.sessionStorage.setItem(AREA_KEY, JSON.stringify(next));
++    } catch {
++      /* 탐색은 계속한다. */
++    }
++  };
++
++  const locate = async () => {
++    const request = requestCurrentMapLocation();
++    const requestId = ++locationRequest.current;
++    setLocating(true);
++    setLocationError(null);
++    try {
++      const coordinate = await request;
++      if (requestId !== locationRequest.current) return;
++      if (!isInSouthKorea(coordinate)) throw new Error('국내 위치를 선택해 주세요.');
++      chooseArea({ ...coordinate, label: '현재 위치 주변' });
++    } catch {
++      if (requestId === locationRequest.current) {
++        setLocationError('현재 위치를 확인하지 못했어요. 동네를 검색해서 선택해 주세요.');
++        setLocating(false);
++      }
++    }
++  };
++
++  const closeStore = () =>
++    setParams(
++      (previous) => {
++        const next = new URLSearchParams(previous);
++        next.delete('store');
++        return next;
++      },
++      { replace: true },
++    );
++
++  const openStore = (id: number) => {
++    const store = query.data?.stores.find((item) => item.id === id);
++    if (store === undefined) return;
++    const size = mapStageRef.current?.getBoundingClientRect();
++    setViewport(getMapFocusCenter(store, level, size?.width || 390, size?.height || 700));
++    setMapMoved(false);
++    setParams((previous) => {
++      const next = new URLSearchParams(previous);
++      next.set('store', String(id));
++      return next;
++    });
++    sheet.previewSheet();
++  };
++
++  return {
++    isActive,
++    markers,
++    enter: (next: NeighborhoodArea, nextRadius: GoodPriceResult['radius']) => {
++      locationRequest.current += 1;
++      setArea(next);
++      setViewport(next);
++      setRadius(nextRadius);
++      setLevel(nextRadius === 500 ? 5 : nextRadius === 1000 ? 6 : 7);
++      setMapMoved(false);
++      setLocating(false);
++      setLocationError(null);
++      sheet.closeSheet();
++      try {
++        window.sessionStorage.setItem(AREA_KEY, JSON.stringify(next));
++      } catch {
++        /* 탐색은 계속한다. */
++      }
++      setParams((previous) => {
++        const nextParams = new URLSearchParams(previous);
++        nextParams.set('mode', 'thrifty');
++        nextParams.delete('store');
++        return nextParams;
++      });
++    },
++    exit: () => {
++      locationRequest.current += 1;
++      setLocating(false);
++      sheet.closeSheet();
++      setParams((previous) => {
++        const next = new URLSearchParams(previous);
++        next.delete('mode');
++        next.delete('store');
++        return next;
++      });
++    },
++    changeLevel: (next: number) => setLevel(next),
++    area,
++    viewport,
++    radius,
++    level,
++    query,
++    selectedStore,
++    isLocating,
++    locationError,
++    sheet,
++    mapStageRef,
++    chooseArea,
++    locate,
++    openStore,
++    closeStore,
++    isMapMoved,
++    selectRadius: (next: GoodPriceResult['radius']) => {
++      setRadius(next);
++      setLevel(next === 500 ? 5 : next === 1000 ? 6 : 7);
++      closeStore();
++      setViewport(area);
++      setMapMoved(false);
++      sheet.previewSheet();
++    },
++    moveMap: (latitude: number, longitude: number) => {
++      const next = { latitude, longitude };
++      if (coordinatesAreClose(viewport, next)) return;
++      setViewport(next);
++      setMapMoved(!coordinatesAreClose(area, next));
++    },
++    searchMap: () => {
++      chooseArea({ ...viewport, label: '지도에서 선택한 위치' });
++    },
++  };
++};
++
++export default useGoodPriceMap;
+diff --git a/frontend/src/pages/map/hooks/useMapSheet.ts b/frontend/src/pages/map/hooks/useMapSheet.ts
+index c906dd8..5597e55 100644
+--- a/frontend/src/pages/map/hooks/useMapSheet.ts
++++ b/frontend/src/pages/map/hooks/useMapSheet.ts
+@@ -30,13 +30,14 @@ const sheetStageHeights = (sheetRef: React.RefObject<HTMLElement | null>): Recor
+   const fullHeight = sheetRef.current?.getBoundingClientRect().height || Math.max(stageHeight - 4.25 * rem, 0);
+   const sheet = sheetRef.current;
+   const bottomInset = sheetBottomInset(sheet);
++  const headerHeight = sheet?.firstElementChild?.getBoundingClientRect().height || 2.25 * rem;
+   const content = sheet?.querySelector<HTMLElement>('[data-sheet-content]');
+   const singleHeight =
+     sheet?.dataset.single === 'true' && content !== null && content !== undefined && !content.hidden
+       ? content.scrollHeight + (sheet.firstElementChild?.getBoundingClientRect().height || 2.25 * rem) + 0.5 * rem
+       : Infinity;
+   return {
+-    closed: Math.min(2.25 * rem + bottomInset, fullHeight),
++    closed: Math.min(headerHeight + bottomInset, fullHeight),
+     mid: Math.min(Math.min(stageHeight * 0.34, 18 * rem, singleHeight) + bottomInset, fullHeight),
+     full: fullHeight,
+   };
+diff --git a/frontend/src/pages/map/ui/map-controls/MapControls.module.css b/frontend/src/pages/map/ui/map-controls/MapControls.module.css
+index 10e7fe3..26527b0 100644
+--- a/frontend/src/pages/map/ui/map-controls/MapControls.module.css
++++ b/frontend/src/pages/map/ui/map-controls/MapControls.module.css
+@@ -10,7 +10,7 @@
+ 
+ .locationControls {
+   position: absolute;
+-  top: 22.45rem;
++  top: 25.25rem;
+   right: 0.85rem;
+   z-index: 15;
+   display: grid;
+@@ -38,6 +38,6 @@
+ 
+ @media (max-width: 340px) {
+   .locationControls {
+-    top: 19.75rem;
++    top: 22.2rem;
+   }
+ }
+diff --git a/frontend/src/pages/map/ui/map-controls/MapControls.tsx b/frontend/src/pages/map/ui/map-controls/MapControls.tsx
+index 23cb9ae..8d1de4f 100644
+--- a/frontend/src/pages/map/ui/map-controls/MapControls.tsx
++++ b/frontend/src/pages/map/ui/map-controls/MapControls.tsx
+@@ -3,6 +3,7 @@ import type { MapCategory } from '@/features/map/model/Map';
+ import MapCategoryRail from '@/features/map/ui/map-category-rail/MapCategoryRail';
+ import MapCurrentLocationButton from '@/features/map/ui/map-current-location-button/MapCurrentLocationButton';
+ import MapRadiusSelector from '@/features/map/ui/map-radius-selector/MapRadiusSelector';
++import Icon from '@/shared/ui/icon/Icon';
+ import PageAction from '@/shared/ui/page-action/PageAction';
+ 
+ import { type MapRadius, RADIUS_OPTIONS, radiusLabel } from '../../lib/mapRadius';
+@@ -24,6 +25,7 @@ type MapControlsProps = {
+   onToggleCategory: (category: MapCategory) => void;
+   onMoveToCurrentLocation: () => void;
+   onEnterAddMode: () => void;
++  onEnterThrifty: () => void;
+ };
+ 
+ const MapControls = ({
+@@ -40,6 +42,7 @@ const MapControls = ({
+   onToggleCategory,
+   onMoveToCurrentLocation,
+   onEnterAddMode,
++  onEnterThrifty,
+ }: MapControlsProps) => (
+   <>
+     <>
+@@ -59,6 +62,11 @@ const MapControls = ({
+         selectedCategories={selectedCategories}
+         counts={categoryCounts}
+         onToggle={onToggleCategory}
++        extraCategory={
++          !isAddMode
++            ? { label: '알뜰', icon: <Icon name="store" size={20} />, isSelected: false, onToggle: onEnterThrifty }
++            : undefined
++        }
+       />
+     </>
+     <div className={styles.locationControls}>
+diff --git a/frontend/src/pages/map/ui/map-good-price-layer/MapGoodPriceLayer.module.css b/frontend/src/pages/map/ui/map-good-price-layer/MapGoodPriceLayer.module.css
+new file mode 100644
+index 0000000..d889798
+--- /dev/null
++++ b/frontend/src/pages/map/ui/map-good-price-layer/MapGoodPriceLayer.module.css
+@@ -0,0 +1,60 @@
++.category {
++  position: absolute;
++  top: 7rem;
++  left: 0.85rem;
++  z-index: 25;
++  display: flex;
++  align-items: center;
++  gap: 0.4rem;
++  min-height: 2.5rem;
++  padding: 0.55rem 0.8rem;
++  border: 2px solid var(--color-brand-yellow);
++  border-radius: 0.85rem;
++  background: var(--color-surface-translucent);
++  color: var(--color-ink);
++  font-size: 0.75rem;
++  box-shadow: 0 0.2rem 0.6rem rgb(0 0 0 / 8%);
++}
++.notice {
++  position: absolute;
++  top: 10rem;
++  left: 0.85rem;
++  right: 0.85rem;
++  z-index: 25;
++  padding: 0.8rem;
++  border-radius: var(--radius-sm);
++  background: var(--color-surface-translucent);
++  color: var(--color-ink);
++  font-size: 0.75rem;
++  line-height: 1.6;
++}
++.searchMap {
++  position: absolute;
++  top: 10.5rem;
++  left: 50%;
++  z-index: 25;
++  display: flex;
++  align-items: center;
++  gap: 0.4rem;
++  transform: translateX(-50%);
++  min-height: 2.5rem;
++  padding: 0.6rem 1rem;
++  border: 1px solid var(--color-border);
++  border-radius: 999px;
++  background: var(--color-surface-translucent);
++  color: var(--color-ink);
++  box-shadow: 0 0.2rem 0.7rem rgb(0 0 0 / 12%);
++  white-space: nowrap;
++  font-size: 0.8rem;
++  cursor: pointer;
++}
++
++.locationContent {
++  display: grid;
++  gap: 1rem;
++}
++.locationError {
++  margin: 0;
++  line-height: 1.7;
++  font-size: 0.8rem;
++}
+diff --git a/frontend/src/pages/map/ui/map-good-price-layer/MapGoodPriceLayer.tsx b/frontend/src/pages/map/ui/map-good-price-layer/MapGoodPriceLayer.tsx
+new file mode 100644
+index 0000000..c202ba4
+--- /dev/null
++++ b/frontend/src/pages/map/ui/map-good-price-layer/MapGoodPriceLayer.tsx
+@@ -0,0 +1,101 @@
++import useAddressSearch from '@/features/map/api/useAddressSearch';
++import AddressSearchResults from '@/features/map/ui/address-search-results/AddressSearchResults';
++import { Button } from '@/shared/ui/button/Button';
++import Icon from '@/shared/ui/icon/Icon';
++import SearchField from '@/shared/ui/search-field/SearchField';
++
++import type useGoodPriceMap from '../../hooks/useGoodPriceMap';
++import NeighborhoodDialog from '../neighborhood-dialog/NeighborhoodDialog';
++import StoreSheet from '../store-sheet/StoreSheet';
++
++import styles from './MapGoodPriceLayer.module.css';
++
++type Props = {
++  exploration: ReturnType<typeof useGoodPriceMap>;
++  isLocationOpen: boolean;
++  onOpenLocation: () => void;
++  onCloseLocation: () => void;
++};
++
++const MapGoodPriceLayer = ({ exploration, isLocationOpen, onOpenLocation, onCloseLocation }: Props) => {
++  const { area, radius, query, selectedStore, sheet } = exploration;
++  const search = useAddressSearch();
++  const closeLocation = () => {
++    onCloseLocation();
++    search.clear();
++  };
++  return (
++    <>
++      <div className={styles.category}>
++        <Icon name="store" size={17} />
++        <span>착한가격 가게</span>
++        {!query.isError && query.data !== undefined && <strong>{query.data.count}</strong>}
++      </div>
++      {exploration.locationError !== null && !isLocationOpen && (
++        <p className={styles.notice} role="alert">
++          {exploration.locationError}
++        </p>
++      )}
++      {exploration.isMapMoved && (
++        <button type="button" className={styles.searchMap} onClick={exploration.searchMap}>
++          <Icon name="search" size={16} />이 위치에서 찾기
++        </button>
++      )}
++      <StoreSheet
++        sheet={sheet}
++        data={query.isError ? undefined : query.data}
++        radius={radius}
++        selectedStore={selectedStore}
++        isLoading={query.isPending}
++        isError={query.isError}
++        onSelect={exploration.openStore}
++        onBack={exploration.closeStore}
++        onRetry={() => void query.refetch()}
++        onExpandRadius={() => exploration.selectRadius(radius === 500 ? 1000 : 2000)}
++        onChangeArea={onOpenLocation}
++      />
++      <NeighborhoodDialog isOpen={isLocationOpen} title="어느 동네를 둘러볼까요?" onClose={closeLocation}>
++        <div className={styles.locationContent}>
++          <Button
++            variant="secondary"
++            fullWidth
++            onClick={() => void exploration.locate()}
++            isLoading={exploration.isLocating}
++            loadingLabel="현재 위치 확인 중…"
++          >
++            현재 위치로 찾기
++          </Button>
++          {exploration.locationError !== null && (
++            <p className={styles.locationError} role="alert">
++              {exploration.locationError}
++            </p>
++          )}
++          {area?.label === '현재 위치 주변' && !exploration.isLocating && exploration.locationError === null && (
++            <Button onClick={closeLocation}>현재 위치 주변 보기</Button>
++          )}
++          <SearchField
++            label="동네 주소 검색"
++            placeholder="도로명이나 지번 주소 검색"
++            value={search.query}
++            onValueChange={search.changeQuery}
++            onSubmit={() => void search.submit()}
++          />
++          <AddressSearchResults
++            results={search.results}
++            status={search.status}
++            onSelect={(address) => {
++              exploration.chooseArea({
++                latitude: address.latitude,
++                longitude: address.longitude,
++                label: address.roadAddress ?? address.jibunAddress ?? '선택한 동네',
++              });
++              closeLocation();
++            }}
++          />
++        </div>
++      </NeighborhoodDialog>
++    </>
++  );
++};
++
++export default MapGoodPriceLayer;
+diff --git a/frontend/src/pages/map/ui/map-stage/MapStage.tsx b/frontend/src/pages/map/ui/map-stage/MapStage.tsx
+index cab67f2..1e0e213 100644
+--- a/frontend/src/pages/map/ui/map-stage/MapStage.tsx
++++ b/frontend/src/pages/map/ui/map-stage/MapStage.tsx
+@@ -1,4 +1,5 @@
+ import type { ReactNode } from 'react';
++import { useNavigate } from 'react-router-dom';
+ 
+ import MapCanvas from '@/features/map/ui/map-canvas/MapCanvas';
+ 
+@@ -19,6 +20,7 @@ type MapStageProps = {
+ /** 인프라 지도 본체: 지도, 반경·시설 조작, 주변 시설 개수 안내, 매물 추가 모드 시트. */
+ const MapStage = ({ map, className, children }: MapStageProps) => {
+   const { addMode, search, mapLocation, filters, selectedRadius, toastCategory } = map;
++  const navigate = useNavigate();
+ 
+   return (
+     <section
+@@ -61,6 +63,7 @@ const MapStage = ({ map, className, children }: MapStageProps) => {
+         onToggleCategory={filters.toggleCategory}
+         onMoveToCurrentLocation={map.moveToCurrentLocation}
+         onEnterAddMode={map.enterAddMode}
++        onEnterThrifty={() => navigate('/map?mode=thrifty', { state: { mapViewKey: map.locationKey } })}
+       />
+       {selectedRadius !== null && toastCategory !== undefined && (
+         <MapNearbyCountToast
+diff --git a/frontend/src/pages/map/ui/neighborhood-dialog/NeighborhoodDialog.module.css b/frontend/src/pages/map/ui/neighborhood-dialog/NeighborhoodDialog.module.css
+new file mode 100644
+index 0000000..7c05d13
+--- /dev/null
++++ b/frontend/src/pages/map/ui/neighborhood-dialog/NeighborhoodDialog.module.css
+@@ -0,0 +1,50 @@
++.dialog {
++  width: min(100%, var(--app-max-width));
++  max-width: 100%;
++  max-height: 86dvh;
++  margin: auto auto 0;
++  padding: 0 0 max(1.5rem, env(safe-area-inset-bottom));
++  border: 0;
++  border-radius: 1.5rem 1.5rem 0 0;
++  background: var(--color-surface);
++  color: var(--color-ink);
++  overscroll-behavior: contain;
++}
++.dialog::backdrop {
++  background: var(--color-overlay);
++}
++.handle {
++  width: 2rem;
++  height: 4px;
++  margin: 0.65rem auto;
++  border-radius: 1rem;
++  background: var(--color-border-strong);
++}
++.heading {
++  display: flex;
++  align-items: center;
++  justify-content: space-between;
++  gap: 1rem;
++  padding: 0.7rem 1.25rem 1rem;
++}
++.heading h2 {
++  margin: 0;
++  font-size: 1.25rem;
++  letter-spacing: -0.04em;
++  overflow-wrap: anywhere;
++}
++.heading button {
++  display: grid;
++  place-items: center;
++  flex-shrink: 0;
++  width: 2.5rem;
++  height: 2.5rem;
++  border: 0;
++  border-radius: 50%;
++  background: var(--color-surface-muted);
++  color: var(--color-ink);
++  cursor: pointer;
++}
++.body {
++  padding: 0 1.25rem;
++}
+diff --git a/frontend/src/pages/map/ui/neighborhood-dialog/NeighborhoodDialog.tsx b/frontend/src/pages/map/ui/neighborhood-dialog/NeighborhoodDialog.tsx
+new file mode 100644
+index 0000000..083fbb1
+--- /dev/null
++++ b/frontend/src/pages/map/ui/neighborhood-dialog/NeighborhoodDialog.tsx
+@@ -0,0 +1,46 @@
++import type { ReactNode } from 'react';
++import { useEffect, useId, useRef } from 'react';
++
++import Icon from '@/shared/ui/icon/Icon';
++
++import styles from './NeighborhoodDialog.module.css';
++
++type Props = { isOpen: boolean; title: string; onClose: () => void; children: ReactNode };
++
++const NeighborhoodDialog = ({ isOpen, title, onClose, children }: Props) => {
++  const ref = useRef<HTMLDialogElement>(null);
++  const titleId = useId();
++  useEffect(() => {
++    const dialog = ref.current;
++    if (!isOpen || dialog === null) return;
++    const trigger = document.activeElement;
++    dialog.showModal();
++    return () => {
++      dialog.close();
++      if (trigger instanceof HTMLElement && trigger.isConnected) trigger.focus({ preventScroll: true });
++    };
++  }, [isOpen]);
++
++  return (
++    <dialog
++      ref={ref}
++      className={styles.dialog}
++      aria-labelledby={titleId}
++      onCancel={(event) => {
++        event.preventDefault();
++        onClose();
++      }}
++    >
++      <div className={styles.handle} aria-hidden="true" />
++      <header className={styles.heading}>
++        <h2 id={titleId}>{title}</h2>
++        <button type="button" onClick={onClose} aria-label="닫기">
++          <Icon name="close" />
++        </button>
++      </header>
++      <div className={styles.body}>{children}</div>
++    </dialog>
++  );
++};
++
++export default NeighborhoodDialog;
+diff --git a/frontend/src/pages/map/ui/store-card/StoreCard.module.css b/frontend/src/pages/map/ui/store-card/StoreCard.module.css
+new file mode 100644
+index 0000000..ff2633a
+--- /dev/null
++++ b/frontend/src/pages/map/ui/store-card/StoreCard.module.css
+@@ -0,0 +1,76 @@
++.card {
++  display: grid;
++  width: 100%;
++  gap: 0.55rem;
++  padding: 1.2rem 0;
++  border: 0;
++  border-bottom: 1px solid var(--color-border);
++  background: var(--color-surface);
++  color: var(--color-ink);
++  text-align: left;
++  cursor: pointer;
++}
++.topLine,
++.name,
++.menu {
++  display: flex;
++  align-items: center;
++  justify-content: space-between;
++  gap: 1rem;
++}
++.businessType {
++  font-size: 0.7rem;
++  font-weight: 600;
++  color: var(--color-ink-soft);
++  background: var(--color-surface-muted);
++  padding: 0.22rem 0.5rem;
++  border-radius: 0.3rem;
++}
++.distance {
++  font-size: 0.75rem;
++  color: var(--color-ink-soft);
++}
++.name {
++  font-size: 1.06rem;
++  font-weight: 750;
++  letter-spacing: -0.035em;
++  overflow-wrap: anywhere;
++}
++.name svg {
++  flex-shrink: 0;
++  color: var(--color-muted);
++}
++.address {
++  color: var(--color-ink-soft);
++  font-size: 0.75rem;
++  line-height: 1.5;
++}
++.menus {
++  display: grid;
++  gap: 0.65rem;
++  margin-top: 0.35rem;
++  padding: 0.9rem;
++  border-radius: var(--radius-sm);
++  background: var(--color-surface-muted);
++}
++.menu {
++  align-items: baseline;
++  font-size: 0.84rem;
++  line-height: 1.4;
++}
++.menu span,
++.menu strong {
++  overflow-wrap: anywhere;
++  min-width: 0;
++}
++.menu strong {
++  text-align: right;
++  max-width: 58%;
++  font-size: 0.9rem;
++  font-variant-numeric: tabular-nums;
++}
++.more,
++.noMenu {
++  font-size: 0.72rem;
++  color: var(--color-ink-soft);
++}
+diff --git a/frontend/src/pages/map/ui/store-card/StoreCard.tsx b/frontend/src/pages/map/ui/store-card/StoreCard.tsx
+new file mode 100644
+index 0000000..228d29b
+--- /dev/null
++++ b/frontend/src/pages/map/ui/store-card/StoreCard.tsx
+@@ -0,0 +1,38 @@
++import { formatStoreDistance, type GoodPriceStore } from '@/features/good-price/model/GoodPriceStore';
++import Icon from '@/shared/ui/icon/Icon';
++
++import styles from './StoreCard.module.css';
++
++const StoreCard = ({ store, onSelect }: { store: GoodPriceStore; onSelect: (id: number) => void }) => (
++  <button
++    type="button"
++    className={styles.card}
++    onClick={() => onSelect(store.id)}
++    aria-label={`${store.name} 상세 보기`}
++  >
++    <span className={styles.topLine}>
++      <span className={styles.businessType}>{store.businessType}</span>
++      <span className={styles.distance}>직선 {formatStoreDistance(store.distanceMeters)}</span>
++    </span>
++    <span className={styles.name}>
++      {store.name}
++      <Icon name="chevron-right" size={18} />
++    </span>
++    <span className={styles.address}>{store.address}</span>
++    <span className={styles.menus}>
++      {store.menus.length === 0 ? (
++        <span className={styles.noMenu}>등록된 메뉴·가격 정보가 없어요</span>
++      ) : (
++        store.menus.slice(0, 2).map((menu, index) => (
++          <span className={styles.menu} key={`${index}-${menu.name}`}>
++            <span>{menu.name}</span>
++            <strong>{menu.price ?? '가격 정보 없음'}</strong>
++          </span>
++        ))
++      )}
++      {store.menus.length > 2 && <span className={styles.more}>메뉴·서비스 {store.menus.length - 2}개 더 보기</span>}
++    </span>
++  </button>
++);
++
++export default StoreCard;
+diff --git a/frontend/src/pages/map/ui/store-detail/StoreDetail.module.css b/frontend/src/pages/map/ui/store-detail/StoreDetail.module.css
+new file mode 100644
+index 0000000..01f685c
+--- /dev/null
++++ b/frontend/src/pages/map/ui/store-detail/StoreDetail.module.css
+@@ -0,0 +1,111 @@
++.detail {
++  display: grid;
++  gap: 1.25rem;
++}
++.meta {
++  display: flex;
++  flex-wrap: wrap;
++  gap: 0.4rem;
++  margin: 0;
++  font-size: 0.78rem;
++  color: var(--color-ink-soft);
++}
++.address {
++  display: flex;
++  align-items: flex-start;
++  gap: 0.5rem;
++  margin: 0;
++  font-size: 0.86rem;
++  line-height: 1.6;
++}
++.address svg {
++  flex-shrink: 0;
++  margin-top: 0.15rem;
++}
++.menuSection {
++  padding: 1rem;
++  border-radius: var(--radius-md);
++  background: var(--color-surface-muted);
++}
++.menuSection h3 {
++  display: flex;
++  justify-content: space-between;
++  margin: 0 0 1rem;
++  font-size: 0.9rem;
++}
++.menuSection h3 span {
++  font-size: 0.7rem;
++  font-weight: 400;
++  color: var(--color-ink-soft);
++}
++.menuSection dl {
++  display: grid;
++  gap: 1rem;
++  margin: 0;
++}
++.menuSection dl div {
++  display: flex;
++  justify-content: space-between;
++  align-items: baseline;
++  gap: 1rem;
++  font-size: 0.86rem;
++  line-height: 1.6;
++}
++.menuSection dt {
++  flex: 1;
++  overflow-wrap: anywhere;
++}
++.menuSection dd {
++  max-width: 58%;
++  margin: 0;
++  font-weight: 700;
++  text-align: right;
++  overflow-wrap: anywhere;
++}
++.note {
++  padding: 1rem;
++  border: 1px solid var(--color-border);
++  border-radius: var(--radius-md);
++  font-size: 0.78rem;
++  line-height: 1.7;
++}
++.note p {
++  margin: 0.35rem 0 0;
++  color: var(--color-ink-soft);
++}
++.actions {
++  display: flex;
++  align-items: center;
++  gap: 0.7rem;
++}
++.actions a {
++  display: flex;
++  align-items: center;
++  justify-content: center;
++  gap: 0.5rem;
++  min-height: 3rem;
++  flex: 1;
++  border-radius: var(--radius-md);
++  font-size: 0.9rem;
++  font-weight: 650;
++  text-decoration: none;
++}
++.phone {
++  color: var(--color-ink);
++  background: var(--color-surface-neutral);
++}
++.mapLink {
++  background: var(--color-action);
++  color: var(--color-on-action);
++}
++.noPhone {
++  flex: 1;
++  font-size: 0.7rem;
++  color: var(--color-ink-soft);
++}
++.phoneNumber {
++  margin: -0.6rem 0 0;
++  color: var(--color-ink-soft);
++  font-size: 0.75rem;
++  text-align: center;
++}
+diff --git a/frontend/src/pages/map/ui/store-detail/StoreDetail.tsx b/frontend/src/pages/map/ui/store-detail/StoreDetail.tsx
+new file mode 100644
+index 0000000..06001a1
+--- /dev/null
++++ b/frontend/src/pages/map/ui/store-detail/StoreDetail.tsx
+@@ -0,0 +1,60 @@
++import { formatStoreDistance, type GoodPriceStore } from '@/features/good-price/model/GoodPriceStore';
++import Icon from '@/shared/ui/icon/Icon';
++
++import styles from './StoreDetail.module.css';
++
++const StoreDetail = ({ store, dataAsOf }: { store: GoodPriceStore; dataAsOf: string | null }) => (
++  <div className={styles.detail}>
++    <p className={styles.meta}>
++      {store.businessType} <span>·</span> 기준 위치에서 직선 {formatStoreDistance(store.distanceMeters)}
++    </p>
++    <p className={styles.address}>
++      <Icon name="locate" size={18} />
++      {store.address}
++    </p>
++    <section className={styles.menuSection} aria-label="메뉴와 서비스 가격">
++      <h3>
++        메뉴·서비스 <span>등록 가격 · 원</span>
++      </h3>
++      {store.menus.length === 0 ? (
++        <p>등록된 메뉴·가격 정보가 없어요.</p>
++      ) : (
++        <dl>
++          {store.menus.map((menu, index) => (
++            <div key={`${index}-${menu.name}`}>
++              <dt>{menu.name}</dt>
++              <dd>{menu.price ?? '가격 정보 없음'}</dd>
++            </div>
++          ))}
++        </dl>
++      )}
++    </section>
++    <aside className={styles.note}>
++      <strong>방문 전에 한 번 확인해 주세요</strong>
++      <p>
++        행정안전부 착한가격업소 현황{dataAsOf === null ? '' : ` · ${dataAsOf} 기준`}입니다. 현재 가격·영업 여부와 다를
++        수 있어요.
++      </p>
++    </aside>
++    <div className={styles.actions}>
++      {store.phone !== null ? (
++        <a className={styles.phone} href={`tel:${store.phone.replace(/[^+\d]/g, '')}`}>
++          전화하기
++        </a>
++      ) : (
++        <span className={styles.noPhone}>등록된 전화번호가 없어요</span>
++      )}
++      <a
++        className={styles.mapLink}
++        href={`https://map.kakao.com/link/to/${encodeURIComponent(store.name)},${store.latitude},${store.longitude}`}
++        target="_blank"
++        rel="noreferrer"
++      >
++        길찾기 <Icon name="external-link" size={16} />
++      </a>
++    </div>
++    {store.phone !== null && <p className={styles.phoneNumber}>{store.phone}</p>}
++  </div>
++);
++
++export default StoreDetail;
+diff --git a/frontend/src/pages/map/ui/store-sheet/StoreSheet.module.css b/frontend/src/pages/map/ui/store-sheet/StoreSheet.module.css
+new file mode 100644
+index 0000000..98c716a
+--- /dev/null
++++ b/frontend/src/pages/map/ui/store-sheet/StoreSheet.module.css
+@@ -0,0 +1,130 @@
++.viewport {
++  position: absolute;
++  inset: 0;
++  z-index: 30;
++  overflow: hidden;
++  pointer-events: none;
++}
++.sheet {
++  position: absolute;
++  right: 0;
++  bottom: 0;
++  left: 0;
++  display: flex;
++  flex-direction: column;
++  width: 100%;
++  height: calc(100% - 4.25rem);
++  max-height: calc(100% - 4.25rem);
++  padding-bottom: calc(0.5rem + var(--map-sheet-bottom, 0px));
++  overflow: hidden;
++  border-radius: 1.25rem 1.25rem 0 0;
++  background: var(--color-surface);
++  box-shadow: 0 -0.4rem 1.5rem rgb(0 0 0 / 12%);
++  transform: translate3d(0, calc(100% - 3.75rem - var(--map-sheet-bottom, 0px)), 0);
++  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
++  will-change: transform;
++  pointer-events: auto;
++}
++.sheet[data-dragging='true'] {
++  transition: none;
++}
++.header {
++  display: flex;
++  flex-direction: column;
++  align-items: center;
++  gap: 0.65rem;
++  width: 100%;
++  min-height: 3.75rem;
++  padding: 0.6rem 1.1rem 0.8rem;
++  border: 0;
++  flex: none;
++  background: var(--color-surface);
++  color: var(--color-ink);
++  cursor: pointer;
++  text-align: left;
++  touch-action: none;
++  user-select: none;
++  -webkit-user-select: none;
++}
++.handle {
++  width: 2.5rem;
++  height: 0.25rem;
++  border-radius: 999px;
++  background: var(--color-border-strong);
++}
++.headerRow {
++  display: flex;
++  justify-content: space-between;
++  align-items: center;
++  gap: 0.7rem;
++  width: 100%;
++}
++.headerRow strong {
++  overflow: hidden;
++  text-overflow: ellipsis;
++  white-space: nowrap;
++  font-size: 0.95rem;
++  letter-spacing: -0.035em;
++}
++.headerRow svg {
++  flex-shrink: 0;
++}
++.contentViewport {
++  height: var(--map-sheet-content-height, 0px);
++  min-height: 0;
++  flex: none;
++  overflow: hidden;
++}
++.body {
++  height: 100%;
++  padding: 0 1.1rem 1rem;
++  overflow-y: auto;
++  overscroll-behavior: contain;
++}
++.tools {
++  display: flex;
++  justify-content: space-between;
++  align-items: center;
++  min-height: 2.2rem;
++  gap: 0.5rem;
++  margin-bottom: 0.6rem;
++  color: var(--color-ink-soft);
++  font-size: 0.66rem;
++}
++.tools button {
++  display: inline-flex;
++  align-items: center;
++  gap: 0.25rem;
++  min-height: 2.2rem;
++  padding: 0;
++  border: 0;
++  background: transparent;
++  color: var(--color-ink);
++  font-size: 0.73rem;
++  cursor: pointer;
++}
++.list {
++  list-style: none;
++  margin: 0;
++  padding: 0;
++}
++.state {
++  display: grid;
++  justify-items: center;
++  gap: 0.8rem;
++  padding: 1.25rem 0;
++  text-align: center;
++}
++.state h2 {
++  margin: 0;
++  font-size: 0.95rem;
++}
++.state p,
++.source {
++  color: var(--color-ink-soft);
++  font-size: 0.72rem;
++  line-height: 1.7;
++}
++.source {
++  padding-block: 1rem;
++}
+diff --git a/frontend/src/pages/map/ui/store-sheet/StoreSheet.tsx b/frontend/src/pages/map/ui/store-sheet/StoreSheet.tsx
+new file mode 100644
+index 0000000..55fee4a
+--- /dev/null
++++ b/frontend/src/pages/map/ui/store-sheet/StoreSheet.tsx
+@@ -0,0 +1,152 @@
++import { useLayoutEffect, useRef } from 'react';
++
++import type { GoodPriceResult, GoodPriceStore } from '@/features/good-price/model/GoodPriceStore';
++import { Button } from '@/shared/ui/button/Button';
++import Icon from '@/shared/ui/icon/Icon';
++
++import type useMapSheet from '../../hooks/useMapSheet';
++import StoreCard from '../store-card/StoreCard';
++import StoreDetail from '../store-detail/StoreDetail';
++
++import styles from './StoreSheet.module.css';
++
++type Props = {
++  sheet: ReturnType<typeof useMapSheet>;
++  data: GoodPriceResult | undefined;
++  radius: GoodPriceResult['radius'];
++  selectedStore: GoodPriceStore | null;
++  isLoading: boolean;
++  isError: boolean;
++  onSelect: (id: number) => void;
++  onBack: () => void;
++  onRetry: () => void;
++  onExpandRadius: () => void;
++  onChangeArea: () => void;
++};
++
++const StoreSheet = ({
++  sheet,
++  data,
++  radius,
++  selectedStore,
++  isLoading,
++  isError,
++  onSelect,
++  onBack,
++  onRetry,
++  onExpandRadius,
++  onChangeArea,
++}: Props) => {
++  const bodyRef = useRef<HTMLDivElement>(null);
++  const listScroll = useRef(0);
++  const isOpen = sheet.sheetStage !== 'closed' || sheet.isDragging;
++  const radiusLabel = radius === 500 ? '500m' : `${radius / 1000}km`;
++  useLayoutEffect(() => {
++    const body = bodyRef.current;
++    if (body === null) return;
++    body.scrollTop = selectedStore === null ? listScroll.current : 0;
++  }, [selectedStore?.id]);
++
++  return (
++    <div className={styles.viewport} data-sheet-viewport>
++      <section
++        ref={sheet.sheetRef}
++        className={styles.sheet}
++        data-dragging={sheet.isDragging || undefined}
++        aria-label={selectedStore?.name ?? '반경 안 가게 목록'}
++      >
++        <button
++          type="button"
++          className={styles.header}
++          aria-expanded={isOpen}
++          aria-label={`${selectedStore === null ? '가게 목록' : '가게 정보'} ${isOpen ? '닫기' : '열기'}`}
++          onPointerDown={sheet.handleDragStart}
++          onPointerMove={sheet.handleDragMove}
++          onPointerUp={sheet.handleDragEnd}
++          onPointerCancel={sheet.handleDragCancel}
++          onClick={sheet.toggleSheet}
++        >
++          <span className={styles.handle} />
++          <span className={styles.headerRow}>
++            <strong>
++              {selectedStore?.name ??
++                (isLoading
++                  ? '주변 가게를 찾고 있어요'
++                  : isError
++                    ? '가게 목록을 불러오지 못했어요'
++                    : `${radiusLabel} 안 착한가격 가게 ${data?.count ?? 0}곳`)}
++            </strong>
++            <Icon name={isOpen ? 'chevron-down' : 'chevron-up'} size={18} />
++          </span>
++        </button>
++        <div className={styles.contentViewport}>
++          <div
++            ref={bodyRef}
++            className={styles.body}
++            data-sheet-content
++            aria-hidden={!isOpen}
++            inert={!isOpen}
++            onScroll={(event) => {
++              if (selectedStore === null) listScroll.current = event.currentTarget.scrollTop;
++            }}
++          >
++            <div className={styles.tools}>
++              {selectedStore === null ? (
++                <span>가까운 순 · 직선거리 · 가격 단위 원</span>
++              ) : (
++                <button type="button" onClick={onBack}>
++                  <Icon name="arrow-left" size={15} />
++                  가게 목록으로
++                </button>
++              )}
++              {sheet.sheetStage !== 'full' && (
++                <button type="button" onClick={sheet.expandSheet}>
++                  전체 펼치기
++                  <Icon name="chevron-up" size={15} />
++                </button>
++              )}
++            </div>
++            {isLoading ? (
++              <p className={styles.state} role="status">
++                주변 가게를 찾고 있어요…
++              </p>
++            ) : isError ? (
++              <div className={styles.state} role="alert">
++                <h2>가게를 불러오지 못했어요</h2>
++                <Button onClick={onRetry}>다시 시도</Button>
++              </div>
++            ) : selectedStore !== null ? (
++              <StoreDetail store={selectedStore} dataAsOf={data?.dataAsOf ?? null} />
++            ) : data?.count === 0 ? (
++              <div className={styles.state}>
++                <h2>{radiusLabel} 안에 등록된 가게가 없어요</h2>
++                <p>조금 더 넓은 범위나 다른 동네를 살펴보세요.</p>
++                {radius < 2000 && <Button onClick={onExpandRadius}>반경 넓히기</Button>}
++                <Button variant="secondary" onClick={onChangeArea}>
++                  다른 동네 찾기
++                </Button>
++              </div>
++            ) : (
++              <ul className={styles.list} aria-label="가게 목록">
++                {data?.stores.map((store) => (
++                  <li key={store.id}>
++                    <StoreCard store={store} onSelect={onSelect} />
++                  </li>
++                ))}
++              </ul>
++            )}
++            {selectedStore === null && data !== undefined && (
++              <p className={styles.source}>
++                행정안전부 착한가격업소 현황{data.dataAsOf === null ? '' : ` · ${data.dataAsOf} 기준`}
++                <br />
++                방문 전 가격과 영업 여부를 확인해 주세요.
++              </p>
++            )}
++          </div>
++        </div>
++      </section>
++    </div>
++  );
++};
++
++export default StoreSheet;
+diff --git a/frontend/src/shared/ui/icon/Icon.tsx b/frontend/src/shared/ui/icon/Icon.tsx
+index 3223135..31c2f92 100644
+--- a/frontend/src/shared/ui/icon/Icon.tsx
++++ b/frontend/src/shared/ui/icon/Icon.tsx
+@@ -22,6 +22,7 @@ import {
+   PlusIcon,
+   RefreshIcon,
+   SearchIcon,
++  StoreIcon,
+   TargetIcon,
+   TrashIcon,
+   UserIcon,
+@@ -49,6 +50,7 @@ export type IconName =
+   | 'plus'
+   | 'refresh'
+   | 'search'
++  | 'store'
+   | 'target'
+   | 'trash'
+   | 'user';
+@@ -83,6 +85,7 @@ const iconComponents: Record<IconName, ComponentType<IconComponentProps>> = {
+   plus: PlusIcon,
+   refresh: RefreshIcon,
+   search: SearchIcon,
++  store: StoreIcon,
+   target: TargetIcon,
+   trash: TrashIcon,
+   user: UserIcon,
+diff --git a/frontend/src/shared/ui/icon/icons/StoreIcon.tsx b/frontend/src/shared/ui/icon/icons/StoreIcon.tsx
+new file mode 100644
+index 0000000..e54ccb9
+--- /dev/null
++++ b/frontend/src/shared/ui/icon/icons/StoreIcon.tsx
+@@ -0,0 +1,10 @@
++import IconBase, { type IconProps } from '../IconBase';
++
++const StoreIcon = (props: Omit<IconProps, 'children'>) => (
++  <IconBase {...props}>
++    <path d="M4 10v10h16V10M3 10l2-6h14l2 6" />
++    <path d="M3 10a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0M9 20v-6h6v6M9 4v6M15 4v6" />
++  </IconBase>
++);
++
++export default StoreIcon;
+diff --git a/frontend/src/shared/ui/icon/icons/index.ts b/frontend/src/shared/ui/icon/icons/index.ts
+index ec4b8c3..8aa1bdf 100644
+--- a/frontend/src/shared/ui/icon/icons/index.ts
++++ b/frontend/src/shared/ui/icon/icons/index.ts
+@@ -22,3 +22,5 @@ export { default as SearchIcon } from './SearchIcon';
+ export { default as TargetIcon } from './TargetIcon';
+ export { default as TrashIcon } from './TrashIcon';
+ export { default as UserIcon } from './UserIcon';
++
++export { default as StoreIcon } from './StoreIcon';
+diff --git a/frontend/test/app/router/GoodPriceMapRoutes.test.tsx b/frontend/test/app/router/GoodPriceMapRoutes.test.tsx
+new file mode 100644
+index 0000000..2ff1720
+--- /dev/null
++++ b/frontend/test/app/router/GoodPriceMapRoutes.test.tsx
+@@ -0,0 +1,237 @@
++import { QueryClientProvider } from '@tanstack/react-query';
++import { render, screen, waitFor, within } from '@testing-library/react';
++import userEvent from '@testing-library/user-event';
++import { http, HttpResponse } from 'msw';
++import { MemoryRouter } from 'react-router-dom';
++import { beforeEach, describe, expect, it } from 'vitest';
++
++import { successEnvelope } from '@/app/mocks/fixtures/propertyFixtures';
++import AppRoutes from '@/app/router/AppRoutes';
++import { setAuthentication } from '@/features/auth/model/authStore';
++import { queryClient } from '@/shared/api/queryClient';
++import { PublicConfigProvider } from '@/shared/config/PublicConfigContext';
++
++import { server } from '../../server';
++
++const result = {
++  center: { latitude: 37.5665, longitude: 126.978 },
++  radius: 1000,
++  count: 1,
++  dataAsOf: '2026-06-30',
++  stores: [
++    {
++      id: 1,
++      name: '범위가격 가게',
++      businessType: '기타비요식업',
++      phone: null,
++      address: '서울 중구',
++      latitude: 37.567,
++      longitude: 126.978,
++      distanceMeters: 56,
++      menus: [
++        { name: '꽃다발', price: '25000~45000' },
++        { name: '맞춤 꽃다발', price: null },
++      ],
++    },
++  ],
++};
++
++let visit = 0;
++const renderPage = (path = '/map?mode=thrifty') => {
++  setAuthentication({ accessToken: 'test-token', tokenType: 'Bearer', expiresIn: 60 });
++  render(
++    <QueryClientProvider client={queryClient}>
++      <MemoryRouter
++        initialEntries={[
++          {
++            pathname: path.split('?')[0],
++            search: path.includes('?') ? `?${path.split('?')[1]}` : '',
++            key: `good-price-${++visit}`,
++          },
++        ]}
++      >
++        <PublicConfigProvider config={{ apiBaseUrl: 'http://localhost:8080', mapProviderMode: 'demo' }}>
++          <AppRoutes />
++        </PublicConfigProvider>
++      </MemoryRouter>
++    </QueryClientProvider>,
++  );
++};
++
++beforeEach(() => {
++  queryClient.clear();
++  server.use(http.get('*/api/maps/good-price-stores', () => HttpResponse.json(successEnvelope(result))));
++  server.use(
++    http.get('*/api/maps/geocode', () =>
++      HttpResponse.json(
++        successEnvelope([
++          { ...result.center, roadAddress: '서울 중구 세종대로 110', jibunAddress: '서울 중구 태평로1가 31' },
++        ]),
++      ),
++    ),
++  );
++});
++
++describe('지도 알뜰 탐색', () => {
++  it('현재 지도의 위치와 반경으로 알뜰을 켜고 같은 지도에서 가게와 매물 모드를 전환한다', async () => {
++    const user = userEvent.setup();
++    const requests: URLSearchParams[] = [];
++    server.use(
++      http.get('*/api/maps/good-price-stores', ({ request }) => {
++        const params = new URL(request.url).searchParams;
++        requests.push(params);
++        return HttpResponse.json(successEnvelope({ ...result, radius: Number(params.get('radius')) }));
++      }),
++    );
++    renderPage('/map');
++    await screen.findByRole('button', { name: '알뜰' });
++    expect(screen.getByRole('button', { name: '알뜰' })).toHaveAttribute('aria-pressed', 'false');
++    expect(requests).toHaveLength(0);
++    expect(
++      within(screen.getByRole('navigation', { name: '주요 메뉴' }))
++        .getAllByRole('link')
++        .map((link) => link.textContent),
++    ).toEqual(['홈', '체크리스트', '지도', '마이']);
++    expect(screen.queryByRole('link', { name: '동네생활' })).not.toBeInTheDocument();
++    await user.click(screen.getByRole('button', { name: '주소 또는 위치 검색' }));
++    await user.type(screen.getByRole('textbox', { name: '주소 검색' }), '서울 시청{Enter}');
++    await user.click(await screen.findByRole('button', { name: /서울 중구 세종대로 110/ }));
++    await user.click(screen.getByRole('button', { name: '500m' }));
++    await user.click(screen.getByRole('button', { name: '알뜰' }));
++    expect(await screen.findByText('500m 안 착한가격 가게 1곳')).toBeInTheDocument();
++    expect(screen.getByRole('button', { name: '알뜰' })).toHaveAttribute('aria-pressed', 'true');
++    expect(screen.getByRole('link', { name: '지도' })).toHaveAttribute('aria-current', 'page');
++    expect(requests[0]?.get('latitude')).toBe(String(result.center.latitude));
++    expect(requests[0]?.get('longitude')).toBe(String(result.center.longitude));
++    expect(requests[0]?.get('radius')).toBe('500');
++    await user.click(
++      within(screen.getByLabelText('데모 지도')).getByRole('button', { name: '범위가격 가게 상세 보기' }),
++    );
++    expect(screen.getByRole('region', { name: '범위가격 가게' })).toBeInTheDocument();
++    await user.click(screen.getByRole('button', { name: '알뜰' }));
++    expect(screen.getByRole('button', { name: '알뜰' })).toHaveAttribute('aria-pressed', 'false');
++    expect(screen.getByRole('region', { name: '매물 지도' })).toBeInTheDocument();
++    expect(screen.queryByRole('region', { name: '범위가격 가게' })).not.toBeInTheDocument();
++    expect(screen.getByRole('button', { name: '지도에서 매물 추가' })).toBeInTheDocument();
++    await user.click(screen.getByRole('button', { name: '알뜰' }));
++    await user.click(screen.getByRole('button', { name: /병원 표시하기/ }));
++    await waitFor(() => expect(screen.getByRole('button', { name: '알뜰' })).toHaveAttribute('aria-pressed', 'false'));
++    expect(screen.getByRole('button', { name: /병원 숨기기/ })).toHaveAttribute('aria-pressed', 'true');
++  });
++
++  it('매물 등록 없이 동네 검색으로 진입하고 가격 원문과 정보 누락을 상세에서 확인한다', async () => {
++    const user = userEvent.setup();
++    renderPage();
++    await user.click(await screen.findByRole('button', { name: '주소 또는 위치 검색' }));
++    await user.type(screen.getByRole('textbox', { name: '동네 주소 검색' }), '서울 시청');
++    await user.click(screen.getByRole('button', { name: '검색' }));
++    await user.click(await screen.findByRole('button', { name: /서울 중구 세종대로 110/ }));
++    await user.click(
++      within(await screen.findByRole('list', { name: '가게 목록' })).getByRole('button', {
++        name: '범위가격 가게 상세 보기',
++      }),
++    );
++    const detail = screen.getByRole('region', { name: '범위가격 가게' });
++    expect(within(detail).getByText('25000~45000')).toBeInTheDocument();
++    expect(within(detail).getByText('가격 정보 없음')).toBeInTheDocument();
++    expect(within(detail).queryByRole('link', { name: '전화하기' })).not.toBeInTheDocument();
++    expect(within(detail).getByRole('link', { name: /길찾기/ })).toHaveAttribute(
++      'href',
++      expect.stringContaining('37.567,126.978'),
++    );
++    await user.click(within(detail).getByRole('button', { name: '가게 목록으로' }));
++    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
++    expect(
++      within(screen.getByRole('list', { name: '가게 목록' })).getByRole('button', { name: '범위가격 가게 상세 보기' }),
++    ).toBeInTheDocument();
++  });
++
++  it('닫힌 목록 위의 지도 핀을 누르면 같은 하단 시트에서 상세를 연다', async () => {
++    const user = userEvent.setup();
++    window.sessionStorage.setItem(
++      'jachwi-sunbae.neighborhoodArea',
++      JSON.stringify({ ...result.center, label: '선택한 동네' }),
++    );
++    renderPage();
++    expect(await screen.findByRole('button', { name: '가게 목록 열기' })).toHaveAttribute('aria-expanded', 'false');
++    expect(screen.queryByRole('list', { name: '가게 목록' })).not.toBeInTheDocument();
++    const map = screen.getByLabelText('데모 지도');
++    await user.click(await within(map).findByRole('button', { name: '범위가격 가게 상세 보기' }));
++    const detail = screen.getByRole('region', { name: '범위가격 가게' });
++    expect(within(detail).getByText('25000~45000')).toBeInTheDocument();
++    expect(screen.getByRole('button', { name: '가게 정보 닫기' })).toHaveAttribute('aria-expanded', 'true');
++    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
++    await user.click(within(detail).getByRole('button', { name: '가게 목록으로' }));
++    expect(screen.getByRole('list', { name: '가게 목록' })).toBeInTheDocument();
++  });
++
++  it('반경을 바꾸면 지도 핀과 하단 목록을 같은 결과로 갱신하고 이전 상세를 닫는다', async () => {
++    const user = userEvent.setup();
++    window.sessionStorage.setItem(
++      'jachwi-sunbae.neighborhoodArea',
++      JSON.stringify({ ...result.center, label: '선택한 동네' }),
++    );
++    const fartherStore = { ...result.stores[0], id: 2, name: '멀리 있는 가게', distanceMeters: 800 };
++    server.use(
++      http.get('*/api/maps/good-price-stores', ({ request }) => {
++        const radius = Number(new URL(request.url).searchParams.get('radius'));
++        const stores = radius === 500 ? result.stores : [...result.stores, fartherStore];
++        return HttpResponse.json(successEnvelope({ ...result, radius, stores, count: stores.length }));
++      }),
++    );
++    renderPage();
++    const map = await screen.findByLabelText('데모 지도');
++    await user.click(await within(map).findByRole('button', { name: '멀리 있는 가게 상세 보기' }));
++    expect(screen.getByRole('region', { name: '멀리 있는 가게' })).toBeInTheDocument();
++    await user.click(screen.getByRole('button', { name: '500m' }));
++    expect(await screen.findByText('500m 안 착한가격 가게 1곳')).toBeInTheDocument();
++    expect(within(map).getAllByRole('button')).toHaveLength(1);
++    expect(screen.queryByRole('region', { name: '멀리 있는 가게' })).not.toBeInTheDocument();
++    expect(within(screen.getByRole('list', { name: '가게 목록' })).getAllByRole('button')).toHaveLength(1);
++    expect(screen.queryByRole('button', { name: '멀리 있는 가게 상세 보기' })).not.toBeInTheDocument();
++  });
++
++  it('반경을 확대해서 빈 결과에서 탐색을 이어간다', async () => {
++    const user = userEvent.setup();
++    window.sessionStorage.setItem(
++      'jachwi-sunbae.neighborhoodArea',
++      JSON.stringify({ ...result.center, label: '선택한 동네' }),
++    );
++    server.use(
++      http.get('*/api/maps/good-price-stores', ({ request }) => {
++        const radius = Number(new URL(request.url).searchParams.get('radius'));
++        return HttpResponse.json(
++          successEnvelope(radius === 1000 ? { ...result, count: 0, stores: [] } : { ...result, radius }),
++        );
++      }),
++    );
++    renderPage();
++    await user.click(await screen.findByRole('button', { name: '가게 목록 열기' }));
++    await user.click(await screen.findByRole('button', { name: '반경 넓히기' }));
++    expect(
++      within(await screen.findByRole('list', { name: '가게 목록' })).getByRole('button', {
++        name: '범위가격 가게 상세 보기',
++      }),
++    ).toBeInTheDocument();
++    expect(screen.getByRole('button', { name: '2km' })).toHaveAttribute('aria-pressed', 'true');
++  });
++
++  it('조회 실패를 빈 결과와 구분하고 재시도한다', async () => {
++    const user = userEvent.setup();
++    window.sessionStorage.setItem(
++      'jachwi-sunbae.neighborhoodArea',
++      JSON.stringify({ ...result.center, label: '선택한 동네' }),
++    );
++    server.use(http.get('*/api/maps/good-price-stores', () => HttpResponse.json({}, { status: 503 })));
++    renderPage();
++    await user.click(await screen.findByRole('button', { name: '가게 목록 열기' }));
++    expect(await screen.findByRole('heading', { name: '가게를 불러오지 못했어요' })).toBeInTheDocument();
++    server.use(http.get('*/api/maps/good-price-stores', () => HttpResponse.json(successEnvelope(result))));
++    await user.click(screen.getByRole('button', { name: '다시 시도' }));
++    expect(
++      within(await screen.findByRole('list', { name: '가게 목록' })).getByRole('button', {
++        name: '범위가격 가게 상세 보기',
++      }),
++    ).toBeInTheDocument();
++  });
++});
+diff --git a/frontend/test/features/good-price/api/goodPriceApi.test.ts b/frontend/test/features/good-price/api/goodPriceApi.test.ts
+new file mode 100644
+index 0000000..4298a52
+--- /dev/null
++++ b/frontend/test/features/good-price/api/goodPriceApi.test.ts
+@@ -0,0 +1,50 @@
++import { describe, expect, it } from 'vitest';
++
++import { parseGoodPriceResult } from '@/features/good-price/api/goodPriceApi';
++
++const response = {
++  center: { latitude: 37.5665, longitude: 126.978 },
++  radius: 1000,
++  count: 1,
++  dataAsOf: '2026-06-30',
++  stores: [
++    {
++      id: 1,
++      name: '계약 검증 업소',
++      businessType: '기타',
++      phone: null,
++      address: '테스트 주소',
++      latitude: 37.5665,
++      longitude: 126.978,
++      distanceMeters: 0,
++      menus: [
++        { name: '범위', price: '25000~45000' },
++        { name: '무료', price: '무료' },
++        { name: '미등록', price: null },
++      ],
++    },
++  ],
++};
++
++describe('착한가격업소 응답 계약', () => {
++  it('가격 원문과 누락 값을 변경하지 않는다', () => {
++    expect(parseGoodPriceResult(response)).toEqual(response);
++  });
++  it('진짜 빈 결과와 null 기준일을 유지한다', () => {
++    const empty = { ...response, count: 0, stores: [], dataAsOf: null };
++    expect(parseGoodPriceResult(empty)).toEqual(empty);
++  });
++  it('지원하지 않는 반경과 목록 개수 불일치는 오류다', () => {
++    expect(() => parseGoodPriceResult({ ...response, radius: 750 })).toThrow();
++    expect(() => parseGoodPriceResult({ ...response, count: 0 })).toThrow();
++  });
++  it('가격 숫자나 유효하지 않은 좌표를 임의 보정하지 않는다', () => {
++    expect(() => parseGoodPriceResult({ ...response, stores: [{ ...response.stores[0], latitude: NaN }] })).toThrow();
++    expect(() =>
++      parseGoodPriceResult({
++        ...response,
++        stores: [{ ...response.stores[0], menus: [{ name: '가격', price: 5000 }] }],
++      }),
++    ).toThrow();
++  });
++});
+diff --git a/frontend/test/features/map/lib/naverMapEngine.test.ts b/frontend/test/features/map/lib/naverMapEngine.test.ts
+index 53ce521..13e3949 100644
+--- a/frontend/test/features/map/lib/naverMapEngine.test.ts
++++ b/frontend/test/features/map/lib/naverMapEngine.test.ts
+@@ -65,3 +65,8 @@ it('SDK 로딩 주소에는 GL 서브모듈이 포함된다', async () => {
+   window.jachwiNaverSdkReady?.();
+   await loading;
+ });
++
++it('ready 이후 인증 실패가 도착하면 다음 지도 로드를 거절한다', async () => {
++  window.navermap_authFailure?.();
++  await expect(naverEngine('test').load()).rejects.toThrow('인증에 실패');
++});
+diff --git a/frontend/test/features/map/ui/map-canvas/MapCanvas.test.tsx b/frontend/test/features/map/ui/map-canvas/MapCanvas.test.tsx
+index d94edfa..6fa101b 100644
+--- a/frontend/test/features/map/ui/map-canvas/MapCanvas.test.tsx
++++ b/frontend/test/features/map/ui/map-canvas/MapCanvas.test.tsx
+@@ -2,6 +2,7 @@ import { act, render, waitFor } from '@testing-library/react';
+ import type { ReactElement } from 'react';
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+ 
++import { NAVER_AUTH_FAILURE_EVENT } from '@/features/map/lib/naverMapEngine';
+ import type { MapRegion } from '@/features/map/model/MapCanvas';
+ import MapCanvas from '@/features/map/ui/map-canvas/MapCanvas';
+ import { PublicConfigProvider } from '@/shared/config/PublicConfigContext';
+@@ -548,4 +549,19 @@ describe('Naver 지도 상태 동기화', () => {
+     expect(first).not.toHaveBeenCalled();
+     expect(maps).toHaveLength(1);
+   });
++
++  it('SDK가 인증 실패 후 객체를 폐기해도 지도 오류만 표시하고 좌표 갱신과 화면 이탈은 안전하다', async () => {
++    const { rerender, unmount, getByText, queryByText } = renderWithConfig(
++      <MapCanvas center={{ latitude: 37.5, longitude: 127 }} level={5} />,
++    );
++    await waitFor(() => expect(maps.length).toBeGreaterThan(0));
++    act(() => {
++      Object.defineProperty(window, 'naver', { configurable: true, value: { maps: null } });
++      window.dispatchEvent(new Event(NAVER_AUTH_FAILURE_EVENT));
++    });
++    expect(getByText('지도를 연결할 수 없어요.')).toBeInTheDocument();
++    expect(queryByText('DEMO MAP')).not.toBeInTheDocument();
++    expect(() => rerender(<MapCanvas center={{ latitude: 37.6, longitude: 127.1 }} level={7} />)).not.toThrow();
++    expect(() => unmount()).not.toThrow();
++  });
+ });

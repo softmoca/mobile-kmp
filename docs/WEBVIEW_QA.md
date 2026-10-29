@@ -1,5 +1,7 @@
 # WebView QA
 
+알뜰 Preview 후속 검증은 [THRIFTY_PREVIEW](THRIFTY_PREVIEW.md)와 [최신 빌드 보고서](BUILD_REPORT.md)를 따른다. 아래는 앞선 기본 dev WebView 전환 검증이다.
+
 검증일: **2026-10-27, Asia/Seoul**. `feat/webview-shell`, Xcode 27.1, 격리된 iPhone 12 mini / iOS 27.0 Simulator에서 검사했다. 처음에는 물리 iPhone 12 mini가 연결되지 않았으나 사용자가 연결한 뒤 iOS 27.0.1 실기기에 같은 Bundle ID의 서명 앱을 업데이트 설치하고 실행했다. 설치·실행 명령은 모두 성공했다. 아래 결과는 실기기 전체 QA 완료를 뜻하지 않는다.
 
 ## 이번에 확인한 결과

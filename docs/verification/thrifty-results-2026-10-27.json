@@ -1,0 +1,64 @@
+{
+  "verifiedAt": "2026-10-27T20:31:00+09:00",
+  "branch": "codex/thrifty-preview",
+  "sourceBaseCommit": "43b8d66352564e16af5db5c63585f565b7756056",
+  "web": {
+    "testFiles": 100,
+    "testsPassed": 627,
+    "lint": "passed",
+    "format": "passed",
+    "buildAndTypecheck": "passed",
+    "macBrowser": "trusted HTTPS, map tiles/markers, address search, radius changes, pan/requery, detail; error logs 0"
+  },
+  "ios": {
+    "simulatorBuild": "passed",
+    "signedDeviceBuild": "passed",
+    "previewUI": {
+      "passed": 1,
+      "failed": 0,
+      "log": ".tools/thrifty-ios-ui-final.log"
+    },
+    "cookieContract": "passed; Secure/HttpOnly, same member refresh, reload, actual API radii",
+    "physicalDevice": "iPhone 12 mini; map mode, tiles, markers, list, detail, radii, KakaoMap app link verified",
+    "signingAndInfoPlistMatchBaseline": true
+  },
+  "api": {
+    "environment": "development",
+    "msw": false,
+    "deployedCommitMatchesBase": true,
+    "cityHallCounts": [
+      2,
+      22,
+      75
+    ],
+    "pangyoPhysicalUICounts": [
+      1,
+      2,
+      6
+    ],
+    "emptyCounts": [
+      0,
+      0,
+      0
+    ]
+  },
+  "preview": {
+    "httpsServerLeftRunning": true,
+    "certificateDeliveryServerStopped": true,
+    "reactChangesReflectedWithoutNativeRebuild": true,
+    "inputStatePreservationAcrossHMR": "not guaranteed; full reload can occur"
+  },
+  "preservation": {
+    "parentTeamRepositoryWrites": false,
+    "push": false,
+    "merge": false,
+    "deployment": false
+  },
+  "notVerified": [
+    "physical GPS and permission denial/reallow",
+    "physical photo picker/HEIC",
+    "physical PDF share/Files",
+    "phone call placement",
+    "Android physical device (excluded)"
+  ]
+}

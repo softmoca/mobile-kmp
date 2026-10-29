@@ -12,6 +12,7 @@
 - 변경 범위의 테스트와 실제 플랫폼 빌드를 실행한다. 실패·미검증은 docs/BUILD_REPORT.md와 docs/IMPLEMENTATION_STATUS.md에 사실대로 기록한다.
 - 최소 검사: ./gradlew :composeApp:testDebugUnitTest :composeApp:assembleDebug :composeApp:lintDebug. macOS/Xcode에서는 iOS Simulator 프레임워크 및 Xcode 앱도 빌드한다.
 - 기능·실행법 변경 시 README와 관련 docs도 수정한다. AGENTS.md와 CLAUDE.md는 항상 동일하게 유지한다.
+- 작업 단위마다 docs/WORK_LOG.md에 변경 내용·검증일과 결과·남은 확인 항목을 기록하고 기능별 커밋으로 보존한다. 원격 push는 사용자 승인이 있는 범위에서 수행한다.
 
 ## 문서 포맷팅
 

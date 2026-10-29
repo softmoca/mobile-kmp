@@ -1,0 +1,7 @@
+{
+  "repository": "https://github.com/woowacourse-teams/2026-jachwi-sunbae.git",
+  "baseCommit": "43b8d66352564e16af5db5c63585f565b7756056",
+  "prototypeCommit": "ec4aa5c139be781ac7942b4e60575f57820bd6db",
+  "branch": "codex/mobile-thrifty-preview",
+  "patch": "thrifty.patch"
+}

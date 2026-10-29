@@ -1,6 +1,26 @@
 # 구현 상태
 
-> 현재 `feat/webview-shell`의 iOS 실행 화면은 WKWebView입니다. 최신 실행법·검증은 [WebView QA](WEBVIEW_QA.md)와 [WebView 구조](WEBVIEW_ARCHITECTURE.md)를 따릅니다. 아래 내용은 `codex/kmp-mobile`의 기존 Compose 구현/검증 기록이며, Android는 기존 구현을 유지합니다.
+## 작업 저장 재검증 — 2026-10-29
+
+개인 `codex/thrifty-preview`의 변경을 WebView 전환과 알뜰 지도 Preview 두 커밋으로 기록한다. 문서 포맷, WebView URL 정책, Android/KMP 필수 검사, 개인 Team을 제외한 두 커밋 대상 iOS Simulator 앱·UI 테스트 코드 빌드가 통과했다. 실서버·실기기 기능 검증일은 아래 10월 27일이며 이번에 반복하지 않았다. 세부 상태와 후속 작업은 [작업 기록](WORK_LOG.md)을 따른다.
+
+## 알뜰 지도 Preview — 2026-10-27 저녁
+
+작업 브랜치는 `codex/thrifty-preview`다. `feat/webview-shell`의 미커밋 구현과 서명을 보존하고, Git 제외 `.tools/thrifty-preview`에 최신 develop을 복제해 알뜰 UI만 이식했다. 소스는 `preview/thrifty.patch`와 manifest로 재현한다. 실행·복귀 명령은 [THRIFTY_PREVIEW](THRIFTY_PREVIEW.md)를 따른다.
+
+- 실제 dev health/info/OpenAPI 확인. 배포 SHA `43b8d66`이 기준 develop과 일치. 인증 조회에서 시청 500m/1km/2km 2/22/75건, 빈 지역 0건, 미인증 401, 잘못된 반경 400. Mock fallback 없음.
+- HTTPS Preview의 WKWebView에서 Secure/HttpOnly 쿠키, 같은 회원 refresh 및 페이지 재로드 후 복원, 실제 업소 API의 3개 반경 응답을 확인했다. iOS 테스트 로그 `.tools/thrifty-ios-tests-2.log`의 API 검사가 통과했다.
+- iOS UI 자동화도 통과했다(`.tools/thrifty-ios-ui-final.log`, 1개/실패 0). 홈 → 지도 → 알뜰 → 실제 주소 검색 → 업소 상세/길찾기 링크 → 목록 → 500m 전환을 검사했다. 초기 자동화의 한글 입력·키보드 가림·펼친 시트·접근성 선택자 문제는 수정 후 재검증했다.
+- iOS Simulator test build와 기존 Personal Team 서명 iPhone 빌드 성공. 기존 Android 단위 테스트·APK·lint·KMP Simulator framework 검사도 성공했다.
+- 이번 작업에서 `project.pbxproj`와 `Info.plist`는 시작 시점과 바이트 단위로 같다. 앱 삭제·Keychain 삭제·원격 push·PR merge·운영 배포 없음.
+- 사용자가 iPhone/Mac의 CA 전체 신뢰와 같은 Maps Application의 호스트 등록을 완료한 뒤, 두 환경 모두 HTTPS 및 네이버 지도 타일/마커가 정상 표시됐다. 인증서 경고·TLS 검증을 우회하지 않았다.
+- 실제 iPhone 12 mini에서 네 개 탭, 지도 → 알뜰, 업소 마커 선택, 목록/상세 펼치기, 원본 메뉴/가격, 반경 전환을 확인했다. 판교 기준 500m/1km/2km가 1/2/6곳으로 갱신됐다. 길찾기는 실제 카카오맵 앱으로 전환됐다. Mac에서는 서울시청 주소 검색, 2/22/75곳, 지도 드래그 후 재검색 69곳, 상세/전화·외부 지도 링크를 확인했다.
+- SDK 인증 실패가 늦게 도착해 내부 객체가 폐기될 때 화면 전체가 중단되는 문제를 재현·수정했다. 지도 오류만 표시하고 실제 업소 목록/반경/상세는 계속 동작한다. 회귀 테스트를 포함해 웹 100개 파일/627개 테스트, lint, format:check, production build/typecheck 통과.
+- React 수정이 iPhone WKWebView에 앱 재빌드 없이 반영됐다. 모듈 수정에 따라 자동 새로고침이 일어날 수 있어 입력 상태 유지까지 보장하지 않는다. 공개 인증서 전달용 HTTP 서버는 종료했고 HTTPS Preview 서버는 실행 중이다.
+- [실기기 지도](verification/thrifty-iphone-map-2026-10-27.png), [목록](verification/thrifty-iphone-list-2026-10-27.png), [상세](verification/thrifty-iphone-detail-2026-10-27.png), [Mac 상세](verification/thrifty-mac-detail-2026-10-27.png)를 저장했다. 실제 GPS/거부·재허용, 사진 선택/HEIC, PDF 공유/Files, 전화 발신은 이번에 검증하지 않았다.
+- 상위 팀 저장소는 읽기 전용이었다. 조회 중 HEAD가 다른 작업으로 바뀌었으나 본 작업에서 상위 Git/추적 파일을 쓰거나 되돌리지 않았다.
+
+> 앞선 `feat/webview-shell`의 iOS 실행 화면은 WKWebView입니다. 최신 실행법·검증은 [WebView QA](WEBVIEW_QA.md)와 [WebView 구조](WEBVIEW_ARCHITECTURE.md)를 따릅니다. 아래 내용은 `codex/kmp-mobile`의 기존 Compose 구현/검증 기록이며, Android는 기존 구현을 유지합니다.
 
 ## 현재 WebView 전환 결과 — 2026-10-27
 

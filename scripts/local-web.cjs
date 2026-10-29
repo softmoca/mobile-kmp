@@ -6,7 +6,7 @@ const { createRequire } = require('node:module');
 
 const root = path.resolve(__dirname, '..');
 const frontend = path.resolve(root, process.env.JACHWI_FRONTEND_PATH || '../frontend');
-const output = path.join(root, '.tools/local-web');
+const output = path.join(root, process.env.JACHWI_REQUIRE_NAVER === 'true' ? '.tools/thrifty-web' : '.tools/local-web');
 const rawOrigin = process.env.JACHWI_LOCAL_ORIGIN;
 
 function localOrigin(value) {
@@ -40,6 +40,9 @@ async function main() {
   process.env.PORT = origin.port || '443';
   const createConfig = frontendRequire('./webpack/webpack.config.cjs');
   const config = createConfig({}, { mode: 'development' });
+  if (process.env.JACHWI_REQUIRE_NAVER === 'true' && !process.env.NAVER_MAP_CLIENT_ID?.trim()) {
+    throw new Error('Preview requires NAVER_MAP_CLIENT_ID in its ignored frontend/.env.local. Demo fallback is disabled.');
+  }
   const definitions = config.plugins.find((plugin) => plugin instanceof webpack.DefinePlugin
     && Object.hasOwn(plugin.definitions, '__API_BASE_URL__'));
   if (!definitions) throw new Error('Team webpack API configuration changed; review this adapter.');

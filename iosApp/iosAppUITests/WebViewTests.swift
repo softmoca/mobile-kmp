@@ -177,4 +177,129 @@ final class WebViewTests: XCTestCase {
         app.terminate()
     }
 
+    func testThriftyPreviewUI() throws {
+        guard let origin = ProcessInfo.processInfo.environment["JACHWI_PREVIEW_URL"],
+              let url = URL(string: origin), WebViewConfiguration.isLocalDevelopmentURL(url) else {
+            throw XCTSkip("신뢰된 HTTPS Preview가 실행 중일 때만 검사합니다.")
+        }
+        let app = XCUIApplication()
+        app.launchEnvironment["JACHWI_WEB_URL"] = origin
+        app.launch()
+        let mapTab = app.webViews.links["지도"].firstMatch
+        XCTAssertTrue(mapTab.waitForExistence(timeout: 40))
+        mapTab.tap()
+        let thrifty = app.webViews.switches["알뜰"].firstMatch
+        if !thrifty.waitForExistence(timeout: 20) {
+            let failure = XCTAttachment(screenshot: app.screenshot())
+            failure.name = "thrifty-entry-failure"
+            failure.lifetime = .keepAlways
+            add(failure)
+            print(app.debugDescription)
+            XCTFail("지도 탭에서 알뜰 버튼을 찾지 못했습니다.")
+            return
+        }
+        thrifty.tap()
+        let search = app.webViews.buttons["주소 또는 위치 검색"].firstMatch
+        XCTAssertTrue(search.waitForExistence(timeout: 15))
+        search.tap()
+        let field = app.webViews.textFields["동네 주소 검색"].firstMatch
+        XCTAssertTrue(field.waitForExistence(timeout: 10))
+        field.tap()
+        // iOS의 한글 조합/React controlled input 사이에 각 글자가 반영된 뒤 다음 글자를 보낸다.
+        var typed = ""
+        for character in "세종대로 110" {
+            field.typeText(String(character))
+            typed.append(character)
+            XCTAssertEqual(field.value as? String, typed)
+        }
+        field.typeText("\n")
+        let address = app.webViews.buttons.matching(NSPredicate(format: "label CONTAINS %@", "세종대로 110")).firstMatch
+        if !address.waitForExistence(timeout: 20) {
+            let failure = XCTAttachment(screenshot: app.screenshot())
+            failure.name = "thrifty-address-failure"
+            failure.lifetime = .keepAlways
+            add(failure)
+            print(app.debugDescription)
+            XCTFail("실제 주소 검색 결과를 찾지 못했습니다.")
+            return
+        }
+        // WebKit 입력 액세서리가 첫 결과의 중앙을 가리므로 사용자가 누르는 완료 버튼으로 닫는다.
+        let keyboardDone = app.toolbars.buttons["Done"].firstMatch
+        if keyboardDone.exists { keyboardDone.tap() }
+        address.tap()
+        let list = app.webViews.buttons.matching(NSPredicate(format: "label CONTAINS %@", "상세 보기")).firstMatch
+        XCTAssertTrue(list.waitForExistence(timeout: 20))
+        list.tap()
+        let expand = app.webViews.buttons["전체 펼치기"].firstMatch
+        if expand.waitForExistence(timeout: 5) { expand.tap() }
+        XCTAssertTrue(app.webViews.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "메뉴·서비스")).firstMatch.waitForExistence(timeout: 10))
+        XCTAssertTrue(app.webViews.links.matching(NSPredicate(format: "label CONTAINS %@", "길찾기")).firstMatch.exists)
+        let screenshot = XCTAttachment(screenshot: app.screenshot())
+        screenshot.name = "thrifty-preview-live-detail"
+        screenshot.lifetime = .keepAlways
+        add(screenshot)
+        app.webViews.buttons["가게 목록으로"].firstMatch.tap()
+        app.webViews.buttons["가게 목록 닫기"].firstMatch.tap()
+        app.webViews.switches["500m"].firstMatch.tap()
+        XCTAssertEqual(app.webViews.switches["500m"].firstMatch.value as? String, "1")
+        XCTAssertTrue(app.webViews.buttons["가게 목록 닫기"].firstMatch.waitForExistence(timeout: 20))
+        XCTAssertFalse(app.webViews.buttons["가게 목록으로"].firstMatch.exists)
+    }
+
+    @MainActor
+    func testThriftyPreviewCookiesAndContract() async throws {
+        guard let origin = ProcessInfo.processInfo.environment["JACHWI_PREVIEW_URL"],
+              let url = URL(string: origin), WebViewConfiguration.isLocalDevelopmentURL(url) else {
+            throw XCTSkip("신뢰된 HTTPS Preview가 실행 중일 때만 검사합니다.")
+        }
+        let configuration = WKWebViewConfiguration()
+        configuration.websiteDataStore = .default()
+        let web = WKWebView(frame: .zero, configuration: configuration)
+        web.load(URLRequest(url: url))
+        for _ in 0..<150 {
+            if web.url?.host == url.host && !web.isLoading { break }
+            try await Task.sleep(nanoseconds: 200_000_000)
+        }
+        let result = try await web.callAsyncJavaScript("""
+        const login = await fetch('/api/auth/login', {method:'POST', credentials:'include'});
+        if (!login.ok) throw new Error('Login status '+login.status);
+        const first = (await login.json()).data.member.memberId;
+        const refresh = await fetch('/api/auth/refresh', {method:'POST', credentials:'include'});
+        if (!refresh.ok) throw new Error('Refresh status '+refresh.status);
+        const {data} = await refresh.json();
+        const counts = [];
+        for (const radius of [500,1000,2000]) {
+          const response = await fetch('/api/maps/good-price-stores?latitude=37.5665&longitude=126.978&radius='+radius,
+            {headers:{Authorization:'Bearer '+data.accessToken}});
+          if (!response.ok) throw new Error('Stores status '+response.status);
+          const stores=(await response.json()).data;
+          if (stores.count!==stores.stores.length || stores.radius!==radius) throw new Error('Contract mismatch');
+          counts.push(stores.count);
+        }
+        return {memberId:first, sameMember:first===data.member.memberId, counts, exposesCookie:document.cookie.includes('refresh_token'),
+          origin:location.origin, serviceWorkers:navigator.serviceWorker ? (await navigator.serviceWorker.getRegistrations()).length : 0};
+        """, arguments: [:], in: nil, contentWorld: .page) as? [String: Any]
+        XCTAssertEqual(result?["sameMember"] as? Bool, true)
+        XCTAssertEqual(result?["exposesCookie"] as? Bool, false)
+        XCTAssertEqual(result?["origin"] as? String, origin)
+        XCTAssertEqual(result?["serviceWorkers"] as? Int, 0, "MSW must not run in the live Preview.")
+        let counts = try XCTUnwrap(result?["counts"] as? [Int])
+        XCTAssertEqual(counts.count, 3)
+        XCTAssertTrue(counts.allSatisfy { $0 > 0 })
+        let cookies = await web.configuration.websiteDataStore.httpCookieStore.allCookies()
+        let refreshCookie = try XCTUnwrap(cookies.first { $0.name == "refresh_token" && $0.domain == url.host })
+        XCTAssertTrue(refreshCookie.isSecure && refreshCookie.isHTTPOnly)
+        web.reloadFromOrigin()
+        for _ in 0..<150 {
+            if !web.isLoading { break }
+            try await Task.sleep(nanoseconds: 200_000_000)
+        }
+        let restoredMember = try await web.callAsyncJavaScript("""
+        const response=await fetch('/api/auth/refresh',{method:'POST',credentials:'include'});
+        if (!response.ok) throw new Error('Reload refresh status '+response.status);
+        return (await response.json()).data.member.memberId;
+        """, arguments: [:], in: nil, contentWorld: .page) as? Int
+        XCTAssertEqual(restoredMember, result?["memberId"] as? Int)
+        print("Thrifty Preview authenticated store counts (500/1000/2000m): \(counts)")
+    }
 }

@@ -1,5 +1,7 @@
 # Mac 로컬 React를 iPhone에서 보기
 
+알뜰 지도 통합은 [THRIFTY_PREVIEW](THRIFTY_PREVIEW.md)의 `npm run dev:preview`를 사용한다. 아래 `dev:web`는 상위 팀 frontend를 읽는 일반 모드이고, `dev:preview`는 개인 저장소의 격리 clone을 읽는다.
+
 ## 기본 모드를 먼저 사용
 
 Xcode Debug는 별도 설정 없이 `https://dev.jachwi-sunbae.kr`을 연다. 웹을 dev에 배포하고 새로고침하면 앱 재빌드 없이 반영된다. 이 방식이 지도 도메인·쿠키·인증서 설정이 가장 단순하다.

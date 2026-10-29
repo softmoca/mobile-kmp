@@ -2,6 +2,10 @@
   "name": "jachwi-sunbae-mobile-docs",
   "private": true,
   "scripts": {
+    "preview:prepare": "node scripts/prepare-thrifty-preview.cjs",
+    "preview:save": "node scripts/save-thrifty-preview.cjs",
+    "dev:preview": "node scripts/thrifty-preview.cjs",
+    "verify:preview-api": "python3 scripts/verify-thrifty-api.py",
     "dev:web": "node scripts/local-web.cjs",
     "test:webview": "sh scripts/test-webview.sh",
     "format:docs": "prettier --config .prettierrc.json --ignore-path .prettierignore --write \"*.md\" \"docs/**/*.md\"",

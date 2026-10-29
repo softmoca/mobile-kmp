@@ -2,6 +2,14 @@
 
 확인일: 2026-10-27 (Asia/Seoul). 현재 개발 서버와 앱의 연결 계약을 기록하는 문서이며 상위 팀 저장소를 수정하지 않는다.
 
+## 알뜰 지도 추가 확인 — 2026-10-27 저녁
+
+이번 Preview의 기준 develop과 실제 `/actuator/info` 커밋은 모두 `43b8d66352564e16af5db5c63585f565b7756056`이다. `/actuator/health`는 UP, `/v3/api-docs`는 200이다. 아래 기존 KMP 검증 시점의 SHA와 구분한다.
+
+`GET /api/maps/good-price-stores?latitude=<number>&longitude=<number>&radius=<500|1000|2000>`는 Bearer 인증이 필요하다. 미인증은 401, 지원하지 않는 반경은 400이다. 성공 envelope의 `data`는 `center {latitude, longitude}`, `radius`, `count`, `dataAsOf: string|null`, `stores`다. 업소는 `id`, `name`, `businessType`, `phone: string|null`, `address`, `latitude`, `longitude`, `distanceMeters`, `menus [{name, price: string|null}]`를 가진다. 메뉴 가격은 원본 문자열이며 범위 가격과 null을 그대로 보존한다.
+
+최신 익명 login과 Secure/HttpOnly Refresh Cookie로 같은 회원을 복원한 뒤 실제 인증 조회를 수행했다. 기준일 2026-06-30의 시청 주변 500m/1km/2km 결과는 2/22/75건, 강남역은 7/29/66건이었다. 빈 지역은 0건이며 Mock으로 대체하지 않는다. [재현 명령과 응답 증거](THRIFTY_PREVIEW.md#실제-dev-api-검증)를 참고한다.
+
 ## 확인 근거와 연결 대상
 
 - 개발: `https://dev-api.jachwi-sunbae.kr` (Debug).
