@@ -110,3 +110,11 @@ npm run format:docs:check
 ```
 
 React clone의 SDK 보완 커밋은 `eee8af8`, 기능 구현 커밋은 `c4fb83c`다. 개인 저장소도 기능 단위 로컬 커밋으로 기록한다. `preview:prepare`는 기존 편집을 덮어쓰지 않으며 충돌 시 중단한다. 새 clone에서는 manifest의 기준 커밋에 패치를 적용한다. `.tools`를 삭제하기 전에 반드시 패치와 로컬 커밋 보존 여부를 확인한다.
+
+## IP 변경 없이 사용하는 방법
+
+IP가 매번 바뀌는 것은 아니지만 DHCP 임대 갱신·공유기·Wi-Fi 변경으로 달라질 수 있다. 같은 공유기에서는 **DHCP 예약(Address Reservation)** 으로 이 Mac에 항상 같은 IP를 배정하고 네이버 Web 서비스 URL을 한 번 등록하는 방법을 권장한다. 공유기 관리 권한이 필요하며 이 작업에서는 아직 설정하지 않았다. [제조사의 DHCP 예약 설명](https://kb.netgear.com/25722/How-do-I-reserve-an-IP-address-on-my-NETGEAR-router)을 참고한다.
+
+Bonjour `.local` 이름은 일반적으로 IP 대신 쓸 수 있지만 현재 환경에서는 Mac HTTPS 200, iPhone 연결 실패를 확인했다. 따라서 이번 실행의 기본 주소로 채택하지 않고 기존 IP 모드로 복구했다. [Apple 로컬 호스트 이름 안내](https://support.apple.com/ko-kr/guide/mac-help/mchlp2322/mac). 시험한 설정은 임시였으며 공유기·Mac 네트워크 설정·TLS 검증은 바꾸지 않았다.
+
+집/교육장/회사 등 다른 네트워크에서도 같은 URL이 필요하다면 고정 도메인의 개발 서버 또는 접근 제어된 고정 터널을 별도로 준비해야 한다. 이는 현재의 같은 Wi-Fi 로컬 Preview와 다른 운영 방식이다.
