@@ -7,12 +7,21 @@ struct WebViewConfiguration {
     let startURL: URL
     let configurationError: String?
 
-    init(environment: [String: String] = ProcessInfo.processInfo.environment) {
+    init(environment: [String: String] = ProcessInfo.processInfo.environment,
+         localPreviewDefaults: UserDefaults? = nil) {
         #if DEBUG
-        if let value = environment["JACHWI_WEB_URL"], !value.isEmpty {
+        let defaultsKey = "jachwi.debug.localPreviewURL"
+        // Launch environment variables disappear when iOS starts the app from its home-screen icon.
+        // An explicitly empty value clears the remembered Preview and returns to the deployed dev web.
+        if environment["JACHWI_WEB_URL"] == "" {
+            localPreviewDefaults?.removeObject(forKey: defaultsKey)
+        }
+        let value = environment["JACHWI_WEB_URL"] ?? localPreviewDefaults?.string(forKey: defaultsKey)
+        if let value, !value.isEmpty {
             if let url = URL(string: value), Self.isLocalDevelopmentURL(url) {
                 startURL = url
                 configurationError = nil
+                localPreviewDefaults?.set(url.absoluteString, forKey: defaultsKey)
             } else {
                 startURL = Self.developmentURL
                 configurationError = "로컬 주소는 신뢰할 수 있는 인증서를 사용하는 https://Mac-LAN-IP:포트 또는 https://호스트.local:포트여야 합니다."

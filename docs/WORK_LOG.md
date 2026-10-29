@@ -107,3 +107,11 @@
 - 사용자가 알림 수신 기능 연결 전에 미커밋 상태를 먼저 커밋하도록 요청했다. 기능 소스·검증 기록은 `c77300f`까지 이미 원격에 보존돼 있었다.
 - 유일한 미커밋 변경인 Xcode Debug의 기존 Personal Team 지정 한 줄을 값 변경 없이 로컬 커밋한다. 인증서·개인키·환경설정 파일은 포함하지 않는다. 이번 체크포인트는 원격에 push하지 않는다.
 - Xcode 프로젝트 plist 문법과 문서 포맷을 확인한다. 기존에 실기기 빌드에 사용하던 설정을 보존하는 작업이며 기능 코드는 바꾸지 않는다.
+
+## 2026-10-29 — 알림 작업 중단과 저렴한 한 끼 재실행 복구
+
+- 사용자가 알림 작업을 다시 중단하고 앱에서 저렴한 한 끼가 보이지 않는 문제 확인을 요청했다. 알림 네이티브 변경·문서는 `codex/ios-push`의 stash `ac7f05df83c56f031b2f284af44bf90ad04d3446`, 웹 변경은 독립 clone의 `codex/mobile-ios-push` 커밋 `f83a076`에 보존했다. 실제 iPhone에 알림 앱을 설치하거나 테스트 알림을 발송하지 않았다.
+- 개인 저장소는 `codex/cheap-meals`, 독립 React는 `codex/mobile-cheap-meals`로 복귀했다. 저렴한 한 끼 소스는 삭제되지 않았다. 기본 실행으로 카드가 없는 dev 홈을 재현했고, 같은 앱을 로컬 HTTPS Preview로 실행하자 카드가 다시 표시됐다.
+- 원인은 실행 환경변수 `JACHWI_WEB_URL`이 홈 화면에서 다시 켤 때 전달되지 않는 구조다. Debug에서 검증된 로컬 HTTPS origin을 UserDefaults에 기억하고 다음 실행에 복원한다. 빈 환경변수 값으로 명시적으로 초기화한다. 저장된 주소도 매번 기존 URL 정책으로 검사하며 Release는 저장값과 환경변수를 모두 무시한다.
+- 브랜치 복귀 중 파일 교체와 Webpack 재빌드가 겹쳐 잠시 모듈 오류·페이지 연결 오류가 있었지만 재빌드 성공과 HTTPS 200, 실제 iPhone 홈 카드 복구를 확인했다. TLS/ATS 검증·기존 앱 Bundle ID·Personal Team은 유지했다.
+- Debug 주소 복원·초기화·잘못된 주소 거부·Release 무시 테스트가 통과했다. 수정 앱의 Simulator·Personal Team 서명 iPhone 빌드와 같은 Bundle ID 업데이트 설치가 성공했다. 로컬 주소로 한 번 실행한 뒤 환경변수를 제거하고 종료·재실행했을 때 실제 iPhone에서 저렴한 한 끼 카드가 유지됐다. [재실행 증거](verification/cheap-meals-iphone-relaunch-2026-10-29.png)를 보존한다. 원격 push·팀 저장소 수정은 하지 않는다.

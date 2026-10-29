@@ -1,0 +1,21 @@
+{
+  "date": "2026-10-29",
+  "branch": "codex/cheap-meals",
+  "cause": "Debug launch environment was absent on subsequent launches, causing fallback to the deployed dev web without cheap-meals",
+  "notificationWork": "paused at user request; preserved separately",
+  "change": "Remember validated local HTTPS origin in Debug UserDefaults; explicit empty environment clears it; Release ignores stored origin",
+  "checks": {
+    "debugReleaseURLPolicy": "passed",
+    "simulatorBuild": "passed",
+    "signedDeviceBuild": "passed",
+    "updateExistingApp": "passed",
+    "launchWithoutPreviewEnvironment": "passed",
+    "physicalHomeCheapMealsCard": "visible"
+  },
+  "physicalAppBundle": "kr.jachwisunbae.app.dev",
+  "previewHttpsStatus": 200,
+  "tlsVerification": "preserved",
+  "appDeleted": false,
+  "remotePushed": false,
+  "evidence": "cheap-meals-iphone-relaunch-2026-10-29.png"
+}

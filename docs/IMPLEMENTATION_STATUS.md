@@ -1,5 +1,12 @@
 # 구현 상태
 
+## 저렴한 한 끼 재실행 복구 — 2026-10-29
+
+- 사용자 요청으로 알림 작업을 별도 branch/stash에 보관하고 `codex/cheap-meals`로 복귀했다. 알림용 앱을 실기기에 설치하거나 테스트 알림을 발송하지 않았다.
+- 앱 재실행 때 실행 환경변수가 없어 배포 dev 웹으로 돌아가던 문제를 수정했다. Debug는 검증된 로컬 HTTPS Preview 주소를 기억하며, 빈 `JACHWI_WEB_URL=`로 초기화한다. Release와 기존 origin/TLS 검증은 유지했다.
+- Debug/Release 정책 테스트, Simulator 앱 빌드, 기존 Personal Team의 서명 iPhone 빌드가 통과했다. 동일 Bundle ID로 업데이트 설치한 뒤 환경변수 없이 종료·재실행해 실제 iPhone의 홈 카드 유지까지 확인했다. [화면](verification/cheap-meals-iphone-relaunch-2026-10-29.png), [결과 JSON](verification/cheap-meals-relaunch-2026-10-29.json).
+- Preview는 Mac 서버가 켜져 있고 같은 네트워크에 있어야 접속된다. 수정한 앱도 서버가 꺼지면 연결 오류를 표시한다. 이번 수정은 서버 배포가 아니다. Android/KMP는 변경하지 않았으며 같은 날 필수 검사 통과 결과를 유지한다.
+
 ## 저렴한 한 끼 찾기 — 2026-10-29
 
 - 개인 `codex/cheap-meals`, 기존 독립 React clone `codex/mobile-cheap-meals`에서 최신 develop `021267b` 기반으로 구현했다. 이전 변경은 `1855200`과 기존 패치에 보존했다.

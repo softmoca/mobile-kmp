@@ -20,7 +20,7 @@ final class WebViewModel: NSObject, ObservableObject, WKNavigationDelegate, WKUI
     private let maximumPDFBytes: Int64 = 50 * 1024 * 1024
 
     override init() {
-        configuration = WebViewConfiguration()
+        configuration = WebViewConfiguration(localPreviewDefaults: .standard)
         let webConfiguration = WKWebViewConfiguration()
         webConfiguration.websiteDataStore = .default()
         webConfiguration.allowsInlineMediaPlayback = true

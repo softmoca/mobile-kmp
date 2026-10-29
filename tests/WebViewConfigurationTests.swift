@@ -4,11 +4,31 @@ import Foundation
 struct WebViewConfigurationTests {
     static func main() {
         let config = WebViewConfiguration(environment: [:])
+        let suite = "WebViewConfigurationTests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let localURL = "https://192.168.0.2:3000"
+        let localLaunch = WebViewConfiguration(environment: ["JACHWI_WEB_URL": localURL], localPreviewDefaults: defaults)
+        let iconLaunch = WebViewConfiguration(environment: [:], localPreviewDefaults: defaults)
         #if DEBUG
+        precondition(localLaunch.startURL.absoluteString == localURL)
+        precondition(iconLaunch.startURL == localLaunch.startURL)
+        let invalid = WebViewConfiguration(environment: ["JACHWI_WEB_URL": "http://192.168.0.2:3000"], localPreviewDefaults: defaults)
+        precondition(invalid.configurationError != nil)
+        precondition(WebViewConfiguration(environment: [:], localPreviewDefaults: defaults).startURL == localLaunch.startURL)
+        let cleared = WebViewConfiguration(environment: ["JACHWI_WEB_URL": ""], localPreviewDefaults: defaults)
+        precondition(cleared.startURL == WebViewConfiguration.developmentURL)
+        precondition(WebViewConfiguration(environment: [:], localPreviewDefaults: defaults).startURL == WebViewConfiguration.developmentURL)
+        defaults.set("https://untrusted.example", forKey: "jachwi.debug.localPreviewURL")
+        precondition(WebViewConfiguration(environment: [:], localPreviewDefaults: defaults).configurationError != nil)
         precondition(config.startURL == WebViewConfiguration.developmentURL)
         precondition(WebViewConfiguration(environment: ["JACHWI_WEB_URL": "https://192.168.0.2:3000"]).startURL.host == "192.168.0.2")
         precondition(WebViewConfiguration(environment: ["JACHWI_WEB_URL": "http://192.168.0.2:3000"]).configurationError != nil)
         #else
+        defaults.set(localURL, forKey: "jachwi.debug.localPreviewURL")
+        precondition(localLaunch.startURL == WebViewConfiguration.productionURL)
+        precondition(iconLaunch.startURL == WebViewConfiguration.productionURL)
+        precondition(WebViewConfiguration(environment: [:], localPreviewDefaults: defaults).startURL == WebViewConfiguration.productionURL)
         precondition(config.startURL == WebViewConfiguration.productionURL)
         precondition(WebViewConfiguration(environment: ["JACHWI_WEB_URL": "https://192.168.0.2:3000"]).startURL == config.startURL)
         #endif

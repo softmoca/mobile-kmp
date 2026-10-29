@@ -4,7 +4,7 @@
 
 ## 기본 모드를 먼저 사용
 
-Xcode Debug는 별도 설정 없이 `https://dev.jachwi-sunbae.kr`을 연다. 웹을 dev에 배포하고 새로고침하면 앱 재빌드 없이 반영된다. 이 방식이 지도 도메인·쿠키·인증서 설정이 가장 단순하다.
+Xcode Debug는 저장된 로컬 Preview 주소가 없으면 `https://dev.jachwi-sunbae.kr`을 연다. 웹을 dev에 배포하고 새로고침하면 앱 재빌드 없이 반영된다. 이 방식이 지도 도메인·쿠키·인증서 설정이 가장 단순하다.
 
 선택적 로컬 모드는 개인 저장소의 `scripts/local-web.cjs`로 **팀 frontend 소스/설정을 읽기만** 한다. 팀 `.env.local`에 이미 있는 공개 빌드 설정은 읽되 값을 출력하지 않는다. 팀 파일을 바꾸거나 팀 저장소에서 npm 설치/format/build를 실행하지 않는다. frontend 의존성이 이미 설치되어 있어야 한다.
 
@@ -51,9 +51,9 @@ Xcode → Product → Scheme → Edit Scheme → Run → Arguments → Environme
 JACHWI_WEB_URL = https://192.168.0.10:3000
 ```
 
-`iosApp` Debug를 Run한다. 환경변수는 Xcode 실행 시 적용되므로 로컬 모드를 확인할 때 Xcode에서 실행한다. 홈 화면에서 직접 실행하면 해당 실행 환경이 없을 수 있다. 변수를 끄면 다시 배포 dev 웹이다. 공유 scheme에 개인 IP를 커밋하지 않는다. 잘못된 로컬 URL은 조용히 다른 서버로 연결하지 않고 설정 오류를 표시한다.
+`iosApp` Debug를 Run한다. 유효한 로컬 HTTPS 주소는 앱 설정에 저장되어, 종료한 뒤 홈 화면 아이콘으로 다시 켜도 같은 Preview를 연다. 환경변수를 제거하거나 체크 해제하는 것만으로는 저장한 주소를 지우지 않는다. 배포 dev 웹으로 돌아가려면 환경변수를 활성화한 채 값을 비워서(`JACHWI_WEB_URL=`) 한 번 실행한다. 그 뒤에는 변수를 제거해도 된다. 공유 scheme에 개인 IP를 커밋하지 않는다. 잘못된 로컬 URL은 조용히 다른 서버로 연결하지 않고 설정 오류를 표시한다.
 
-Release는 `JACHWI_WEB_URL`을 컴파일 조건으로 무시한다. HTTP/임의 외부 호스트는 Debug 로컬 주소로 허용하지 않는다. ATS의 arbitrary loads 예외를 추가하지 않았다.
+Release는 `JACHWI_WEB_URL`과 저장된 Preview 주소를 모두 컴파일 조건으로 무시한다. HTTP/임의 외부 호스트는 Debug 로컬 주소로 허용하지 않는다. ATS의 arbitrary loads 예외를 추가하지 않았다.
 
 ## 제약과 확인할 것
 
