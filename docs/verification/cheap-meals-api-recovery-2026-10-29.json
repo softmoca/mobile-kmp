@@ -1,0 +1,48 @@
+{
+  "verifiedAt": "2026-10-29T13:15:03+09:00",
+  "previewOrigin": "https://192.168.3.253:3443",
+  "outage": {
+    "observedAt": "2026-10-29T13:10:28+09:00",
+    "previewHttpStatus": 200,
+    "naverTilesVisible": true,
+    "devApiHttpStatus": 503,
+    "responseServer": "awselb/2.0",
+    "checkedPaths": [
+      "/actuator/health",
+      "/actuator/info",
+      "/api/promotions?brand=EMART24",
+      "/api/delivery-discount-offers"
+    ],
+    "physicalUi": "store query error with retry button"
+  },
+  "deployment": {
+    "pipeline": "jachwi-sunbae-dev-line",
+    "commit": "e15644e2b204d2214f03ea8c82d57ce2bc10ecab",
+    "strategy": "single-instance in-place",
+    "blockTrafficDurationSeconds": 308,
+    "blockTrafficWindowKst": "13:06–13:11",
+    "allLifecycleEventsSucceededByKst": "13:13",
+    "inspection": "read-only existing console session"
+  },
+  "recovery": {
+    "healthCheckedAt": "2026-10-29T13:12:40.046050+09:00",
+    "healthHttpStatus": 200,
+    "healthStatus": "UP",
+    "infoHttpStatus": 200,
+    "deployedCommitMatches": true,
+    "browserConvenienceRetry": "passed",
+    "browserEmart24ProductCount": 2337,
+    "browserRestaurantFreshRadiusQuery": "passed",
+    "browserRestaurantRadiusMeters": 2000,
+    "browserRestaurantPublicTestArea": "Pangyo vicinity, manually selected map position",
+    "browserRestaurantStoreCount": 8,
+    "physicalUi": "error replaced by completed empty result at current-location radius 2000",
+    "physicalMarkerDetailAndDragRequery": "awaiting user manual verification; Device Hub input not reflected"
+  },
+  "preciseLocationPersisted": false,
+  "credentialsPersisted": false,
+  "sourceOrNativeConfigChanged": false,
+  "infrastructureChanged": false,
+  "deploymentTriggeredByAgent": false,
+  "pushPerformed": false
+}

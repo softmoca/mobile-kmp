@@ -72,7 +72,7 @@ DEVICECTL_CHILD_JACHWI_WEB_URL=https://192.168.3.253:3443 \
 
 ## 실제 API 결과
 
-배포 `/actuator/info` 커밋은 `fb7144a51757ec969bab16b3f048c970a3625d05`이며, 최신 프론트 기준과 다르지만 네 endpoint가 모두 배포돼 있다. `/v3/api-docs`와 실제 인증 응답을 함께 검사했다.
+11:54 KST 검증 당시 `/actuator/info` 커밋은 `fb7144a51757ec969bab16b3f048c970a3625d05`였으며, 최신 프론트 기준과 다르지만 네 endpoint가 모두 배포돼 있었다. `/v3/api-docs`와 실제 인증 응답을 함께 검사했다. 아래 수치는 이 시점의 결과다.
 
 | 조회                       | 인증 응답 | 실제 데이터                   | 미인증 |
 | -------------------------- | --------- | ----------------------------- | ------ |
@@ -82,6 +82,14 @@ DEVICECTL_CHILD_JACHWI_WEB_URL=https://192.168.3.253:3443 \
 | 배달 할인                  | 200       | 108개: 배민 71 / 쿠팡이츠 37  | 401    |
 
 재현: `npm run verify:cheap-meals-api`. 별도 익명 QA 회원으로 로그인·refresh해 동일 회원 복원과 Secure/HttpOnly 쿠키를 검사한다. 토큰·쿠키·회원 ID는 출력/저장하지 않는다. 회원 삭제 API가 없어 QA 회원은 남는다. 업소/상품/할인 데이터는 읽기만 한다. [응답 요약 JSON](verification/cheap-meals-api-2026-10-29.json).
+
+### 개발 서버 배포 중 일시 중단과 복구
+
+13:10 KST에는 dev API의 health/info·편의점·배달 조회가 ALB의 HTTP 503을 반환했고, iPhone 식당 패널에 조회 오류와 `다시 시도`가 표시됐다. 이때 Mac IP, 로컬 HTTPS Preview, 네이버 지도 타일은 정상이었다. 팀 CodeDeploy 배포 이벤트에서 13:06~13:11 `BlockTraffic` 5분 8초와 이어지는 앱 교체를 확인했다. 개발 서버가 단일 인스턴스의 in-place 배포를 진행하면서 발생한 일시 중단이다.
+
+13:12:40 KST에 health HTTP 200 / UP, info HTTP 200 / 커밋 `e15644e2b204d2214f03ea8c82d57ce2bc10ecab`을 확인했다. 13:13에는 `AllowTraffic`과 `AfterAllowTraffic`까지 성공했다. 브라우저에서 편의점 `다시 시도`를 누른 뒤 2,337개 상품이 복구됐고, 식당 반경을 2km로 바꾼 새 조회에서 판교 인근 8곳과 마커가 표시됐다. iPhone도 오류 문구에서 현재 위치 2km의 정상 빈 결과로 바뀐 것을 확인했다. 서울시청 검색·실기기 마커 상세·드래그 재검색은 사용자 수동 확인을 기다리고 있다.
+
+배포·재시작·롤백·AWS 설정 변경은 수행하지 않았다. [복구 검증 기록](verification/cheap-meals-api-recovery-2026-10-29.json), [상품 복구 화면](verification/cheap-meals-api-recovery-products-2026-10-29.png), [식당 재조회 화면](verification/cheap-meals-api-recovery-map-2026-10-29.png)을 참고한다. iPhone 현재 위치 화면과 정밀 좌표는 저장하지 않았다.
 
 ## 검증과 제약
 
