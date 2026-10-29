@@ -1,0 +1,30 @@
+{
+  "recordedAt": "2026-10-29T13:17:00+09:00",
+  "evidenceSource": "direct user confirmation in this conversation",
+  "userResponse": "목록·마커 상세·지도 재검색 모두 돼요",
+  "physicalDevice": {
+    "model": "iPhone 12 mini",
+    "os": "27.0.1"
+  },
+  "requestedScenario": "Search for Seoul City Hall, open store detail from a marker, move the map, and press search this area",
+  "results": {
+    "storeList": "passed, user confirmed",
+    "markerDetail": "passed, user confirmed",
+    "mapMoveAndRequery": "passed, user confirmed"
+  },
+  "agentAutomatedPhysicalInteraction": false,
+  "newScreenshotCaptured": false,
+  "sourceOrNativeConfigChanged": false,
+  "pushPerformed": false,
+  "previousSnapshots": [
+    "cheap-meals-map-success-2026-10-29.json",
+    "cheap-meals-api-recovery-2026-10-29.json"
+  ],
+  "notVerified": [
+    "location permission denial/regrant",
+    "phone call",
+    "large text/landscape",
+    "iOS 16",
+    "Android physical device"
+  ]
+}

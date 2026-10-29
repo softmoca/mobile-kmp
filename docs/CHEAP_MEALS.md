@@ -87,7 +87,7 @@ DEVICECTL_CHILD_JACHWI_WEB_URL=https://192.168.3.253:3443 \
 
 13:10 KST에는 dev API의 health/info·편의점·배달 조회가 ALB의 HTTP 503을 반환했고, iPhone 식당 패널에 조회 오류와 `다시 시도`가 표시됐다. 이때 Mac IP, 로컬 HTTPS Preview, 네이버 지도 타일은 정상이었다. 팀 CodeDeploy 배포 이벤트에서 13:06~13:11 `BlockTraffic` 5분 8초와 이어지는 앱 교체를 확인했다. 개발 서버가 단일 인스턴스의 in-place 배포를 진행하면서 발생한 일시 중단이다.
 
-13:12:40 KST에 health HTTP 200 / UP, info HTTP 200 / 커밋 `e15644e2b204d2214f03ea8c82d57ce2bc10ecab`을 확인했다. 13:13에는 `AllowTraffic`과 `AfterAllowTraffic`까지 성공했다. 브라우저에서 편의점 `다시 시도`를 누른 뒤 2,337개 상품이 복구됐고, 식당 반경을 2km로 바꾼 새 조회에서 판교 인근 8곳과 마커가 표시됐다. iPhone도 오류 문구에서 현재 위치 2km의 정상 빈 결과로 바뀐 것을 확인했다. 서울시청 검색·실기기 마커 상세·드래그 재검색은 사용자 수동 확인을 기다리고 있다.
+13:12:40 KST에 health HTTP 200 / UP, info HTTP 200 / 커밋 `e15644e2b204d2214f03ea8c82d57ce2bc10ecab`을 확인했다. 13:13에는 `AllowTraffic`과 `AfterAllowTraffic`까지 성공했다. 브라우저에서 편의점 `다시 시도`를 누른 뒤 2,337개 상품이 복구됐고, 식당 반경을 2km로 바꾼 새 조회에서 판교 인근 8곳과 마커가 표시됐다. iPhone도 오류 문구에서 현재 위치 2km의 정상 빈 결과로 바뀐 것을 확인했다. 사용자가 실제 iPhone에서 서울시청 검색 후 목록·마커 상세·지도 이동 뒤 재검색이 모두 동작한다고 확인했다. Device Hub 자동 조작 결과가 아닌 사용자 수동 검증이다.
 
 배포·재시작·롤백·AWS 설정 변경은 수행하지 않았다. [복구 검증 기록](verification/cheap-meals-api-recovery-2026-10-29.json), [상품 복구 화면](verification/cheap-meals-api-recovery-products-2026-10-29.png), [식당 재조회 화면](verification/cheap-meals-api-recovery-map-2026-10-29.png)을 참고한다. iPhone 현재 위치 화면과 정밀 좌표는 저장하지 않았다.
 
@@ -98,12 +98,12 @@ DEVICECTL_CHILD_JACHWI_WEB_URL=https://192.168.3.253:3443 \
 - Android 단위 테스트·APK·lint와 KMP iOS Simulator framework 빌드 성공. iOS Simulator 앱·테스트 빌드는 위 XCTest에 포함됐다. 이번에는 네이티브 앱 코드를 바꾸지 않아 기존 서명 iPhone 앱에서 새 웹을 열었다.
 - 실제 iPhone 12 mini/iOS 27.0.1: 홈/전체, 실제 상품 이미지와 2,337개 목록, 상품 상세/스크롤/닫기, 세븐일레븐 미수집, 배달 108개·쿠팡이츠 37개·상세를 확인했다. 세븐일레븐 1+1과 쿠팡이츠 필터는 탭 왕복 후 유지됐다. React 수정 반영도 앱 재설치 없이 확인했다. 식당 판교 500m/1km/2km는 1/2/6곳으로 바뀌고 목록에서 업소 상세로 진입했다.
 - 브라우저 375px에서 가로 넘침 없음, 24→48개 더 보기와 탭 왕복 후 스크롤 위치 유지, 서울시청 주소 검색 후 22곳을 확인했다. 1024px 데스크톱 홈 배치도 확인했다.
-- **네이버 지도 인증 해결:** 사용자가 등록 주소 끝자리를 `255`에서 `253`으로 정정한 뒤 인증 응답은 HTTP 200 / `result: true`가 됐다. 브라우저와 실제 iPhone 12 mini에서 타일·업소 마커·반경 원이 표시됐다. 브라우저에서는 마커로 업소 상세를 열고 지도 드래그 후 재검색해 목록이 다른 업소로 갱신되는 것을 확인했다. 브라우저 warning/error 로그는 0건이었다. iPhone 마커 선택·드래그 재검색은 Device Hub의 입력 미반영으로 사용자 수동 확인을 요청했다.
+- **네이버 지도 인증 해결:** 사용자가 등록 주소 끝자리를 `255`에서 `253`으로 정정한 뒤 인증 응답은 HTTP 200 / `result: true`가 됐다. 브라우저와 실제 iPhone 12 mini에서 타일·업소 마커·반경 원이 표시됐다. 브라우저에서는 마커로 업소 상세를 열고 지도 드래그 후 재검색해 목록이 다른 업소로 갱신되는 것을 확인했다. 브라우저 warning/error 로그는 0건이었다. Device Hub의 입력 미반영으로 사용자 수동 확인을 요청했고, 이후 사용자가 iPhone의 목록·마커 상세·지도 재검색 모두 성공했다고 확인했다.
 - 사용자가 iPhone 위치 권한을 직접 선택한 뒤 화면이 현재 위치 주변으로 이동하고 2km 조회가 완료되어 빈 결과를 표시하는 것을 확인했다. 정밀 좌표나 현재 위치 화면은 검증 파일에 저장하지 않았다. 권한 거부·재허용, 전화 발신, iOS 16, 큰 글꼴·가로 모드, Android 실기기는 미검증이다. 세븐일레븐 수집을 임의 실행하거나 데이터를 채우지 않았다.
 
 증거: [iPhone 전체](verification/cheap-meals-iphone-overview-2026-10-29.png), [상품](verification/cheap-meals-iphone-products-2026-10-29.png), [상품 상세](verification/cheap-meals-iphone-product-detail-2026-10-29.png), [세븐일레븐](verification/cheap-meals-iphone-seven-empty-2026-10-29.png), [배달](verification/cheap-meals-iphone-delivery-2026-10-29.png), [할인 상세](verification/cheap-meals-iphone-delivery-detail-2026-10-29.png). Device Hub의 실제 iPhone 미러링 원본이며 Simulator 이미지와 구분한다.
 
-추가 상태와 검사 수치는 [검증 요약 JSON](verification/cheap-meals-results-2026-10-29.json)에 있다. 해당 기록 작성 당시에는 Mac 잠금으로 마지막 추가 UI 확인을 멈췄다. 이후 사용자가 잠금을 해제해 현재 브라우저·iPhone 재검증을 수행했다. 정정 전 [인증 오류 기록](verification/cheap-meals-map-registration-2026-10-29.json)은 과거 상태다. 최신 [지도 인증 성공 기록](verification/cheap-meals-map-success-2026-10-29.json), [실기기 지도](verification/cheap-meals-iphone-map-2026-10-29.png), [브라우저 재검색](verification/cheap-meals-browser-map-requery-2026-10-29.png)을 참고한다.
+추가 상태와 검사 수치는 [검증 요약 JSON](verification/cheap-meals-results-2026-10-29.json)에 있다. 해당 기록 작성 당시에는 Mac 잠금으로 마지막 추가 UI 확인을 멈췄다. 이후 사용자가 잠금을 해제해 현재 브라우저·iPhone 재검증을 수행했다. 정정 전 [인증 오류 기록](verification/cheap-meals-map-registration-2026-10-29.json)은 과거 상태다. 이후 사용자 수동 검증 완료는 [실기기 확인 기록](verification/cheap-meals-iphone-manual-2026-10-29.json)에 별도로 남겼다. [지도 인증 성공 기록](verification/cheap-meals-map-success-2026-10-29.json), [실기기 지도](verification/cheap-meals-iphone-map-2026-10-29.png), [브라우저 재검색](verification/cheap-meals-browser-map-requery-2026-10-29.png)을 참고한다.
 
 로그는 Git 제외 `.tools/cheap-meals-20261029/`의 `full-tests.log`, `final-targeted-tests.log`, `final-lint.log`, `final-format.log`, `final-typecheck.log`, `final-build.log`, `gradle.log`, `ios-tests.log`, `ios-tests.xcresult`에 있다.
 
