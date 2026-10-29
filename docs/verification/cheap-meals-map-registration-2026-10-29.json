@@ -1,0 +1,40 @@
+{
+  "verifiedAt": "2026-10-29T12:46:10.430561+09:00",
+  "previewOrigin": "https://192.168.3.253:3443",
+  "registration": "user reported completion; exact saved URL not yet independently verified",
+  "network": "public company or education Wi-Fi, per user",
+  "sdk": {
+    "downloadHttpStatus": 200,
+    "parameter": "ncpKeyId",
+    "browserKeyMatchesPreviewEnv": true,
+    "previewKeyMatchesTeamLocalEnv": true
+  },
+  "auth": {
+    "httpStatus": 401,
+    "errorCode": "200",
+    "message": "Authentication Failed",
+    "details": "Invalid authentication information.",
+    "requestUrlMatchesActualPreview": true
+  },
+  "browser": {
+    "reloaded": true,
+    "retryButtonTested": true,
+    "map": "authentication error",
+    "pangyo1kmStores": 2
+  },
+  "physicalDevice": {
+    "model": "iPhone 12 mini",
+    "os": "27.0.1",
+    "relaunchedWithPreviewOrigin": true,
+    "retryButtonTested": true,
+    "map": "authentication error",
+    "pangyo1kmStores": 2
+  },
+  "notVerified": [
+    "map tiles",
+    "marker selection",
+    "map dragging and requery"
+  ],
+  "credentialsPersisted": false,
+  "sourceOrNativeConfigChanged": false
+}
