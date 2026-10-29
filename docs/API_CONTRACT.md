@@ -1,5 +1,15 @@
 # 확인한 API 계약
 
+## 식비 절약 API 추가 확인 — 2026-10-29
+
+dev 배포 커밋 `fb7144a51757ec969bab16b3f048c970a3625d05`, React 기준 develop `021267b55ac699d02ff0ccbf0a24f7da7fa73e0e`. `/actuator/info`·`/v3/api-docs` 및 실제 인증 응답을 확인했다. [검증 JSON](verification/cheap-meals-api-2026-10-29.json)과 `npm run verify:cheap-meals-api`로 재현한다.
+
+- `GET /api/promotions?brand=EMART24|SEVEN_ELEVEN`: `data {brand,count,collectedAt,sourceUrl,products}`. 상품은 `{name,price,imageUrl,category,promotionType}`. price는 원 단위 정수이며 행사 가격을 임의 환산하지 않는다. category는 MEAL/SNACK/BEVERAGE/HOUSEHOLD_GOODS/UNKNOWN, promotionType은 ONE_PLUS_ONE/TWO_PLUS_ONE/THREE_PLUS_ONE/SALE/PICK_AND_MIX다. collectedAt은 오프셋 포함 시각 또는 null. 브랜드별 전체 목록이고 서버 검색/정렬/페이지네이션은 없다.
+- `GET /api/delivery-discount-offers`: data 배열. `{id,platform,brandName,discountAmount,minOrderAmount,startDate,endDate,conditions,lastVerifiedAt}`. platform은 BAEMIN/COUPANG_EATS. 최소 주문/시작일/종료일/조건은 nullable, lastVerifiedAt은 한국 로컬 시각으로 반환된다. 주문 URL이 없으므로 프론트에서 만들지 않는다.
+- `GET /api/maps/good-price-stores`: 아래 기존 업소 DTO 유지. 음식점 외 업종을 포함하며 menu.price는 숫자가 아닌 원본 문자열/null이다.
+- 네 조회 모두 미인증 401, 익명 로그인·refresh 후 200. 시청 1km 22곳 / 이마트24 2,337개 / 세븐일레븐 0개·collectedAt=null / 배달 108개. 0건과 인증/서버 오류를 구분한다. 모든 필드는 공통 responseParsers와 인증 apiRequest로 파싱한다.
+- WKWebView의 동일 HTTPS origin 프록시에서 네 endpoint와 Secure/HttpOnly refresh를 별도 XCTest로 검증했다. 토큰/회원 ID는 기록하지 않는다. 운영 API는 사용하지 않는다.
+
 확인일: 2026-10-27 (Asia/Seoul). 현재 개발 서버와 앱의 연결 계약을 기록하는 문서이며 상위 팀 저장소를 수정하지 않는다.
 
 ## 알뜰 지도 추가 확인 — 2026-10-27 저녁

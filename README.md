@@ -43,19 +43,20 @@ xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosAppDevSmoke \
 - **배포 dev 모드:** 웹이 dev에 배포된 후 당김 새로고침 또는 종료·재실행. 앱 재빌드는 필요 없다. 백그라운드에서 돌아올 때는 작성 중인 입력을 지키기 위해 자동 새로고침하지 않는다.
 - **선택적 로컬 모드:** [HTTPS 로컬 개발 안내](docs/WEBVIEW_LOCAL_DEVELOPMENT.md)에 따라 개인 저장소에서 `npm run dev:web`를 실행하고 Xcode Debug 실행 환경에 `JACHWI_WEB_URL`을 지정한다. HTTP 주소는 거부한다. Release는 이 환경변수를 무시하고 팀의 운영 웹 주소만 사용한다. 이번 검증에서 운영 웹/API는 호출하지 않는다.
 
-## 알뜰 지도 Preview
+## 저렴한 한 끼 찾기 Preview
 
-`codex/thrifty-preview`에서는 최신 팀 develop을 `.tools/thrifty-preview/`에 별도로 복제하고 알뜰 프로토타입을 이식했다. 팀 저장소를 수정하거나 dev에 배포하지 않는다. 지도 안의 **알뜰**, 500m/1km/2km, 업소 마커·목록·메뉴/가격·주소 상세를 실제 dev API와 연결한다. Preview 모바일 웹에는 요청한 **홈·체크리스트·지도·마이** 네 탭을 둔다.
+현재 `codex/cheap-meals`는 최신 develop을 기반으로 홈 카드 → 전체/식당/편의점/배달을 제공한다. 실제 dev API와 최신 인증·디자인 시스템을 사용하며 기존 홈 구조를 유지한다. 독립 React clone은 `.tools/thrifty-preview`, 브랜치는 `codex/mobile-cheap-meals`다. 이전 알뜰 지도 소스·패치는 보존했다.
 
 ```sh
+# Node 22 환경, 개인 mobile-kmp 루트
 npm run preview:prepare
 npm --prefix .tools/thrifty-preview/frontend ci
-# 인증서와 ignored frontend/.env.local 준비 후
-JACHWI_LOCAL_ORIGIN=https://<Mac-LAN-IP>:3443 npm run dev:preview
-npm run verify:preview-api
+JACHWI_LOCAL_ORIGIN=https://192.168.3.253:3443 npm run dev:preview
 ```
 
-Xcode의 `JACHWI_WEB_URL`을 같은 HTTPS origin으로 지정해 Run한다. 변수를 끄면 기존 dev 웹이다. 지도 키의 로컬 호스트 허용과 기기 인증서 신뢰가 필요하다. 이 설정 전의 API 성공을 지도 배경/실기기 검증 완료로 보지 않는다. [실행·복귀·재설치·검증 안내](docs/THRIFTY_PREVIEW.md)를 따른다. `.tools`의 React 편집 내용을 보존하려면 `npm run preview:save`로 `preview/thrifty.patch`를 갱신한다.
+Xcode Debug 실행 환경 `JACHWI_WEB_URL`을 같은 HTTPS origin으로 지정한다. 기존 인증서·ignored 환경설정이 필요하며 IP가 바뀌면 인증서 SAN과 네이버 허용 URL도 갱신한다. 새 IP 지도 허용 등록은 사용자 확인이 남아 있다. `npm run verify:cheap-meals-api`로 네 API를 검증하고 `npm run preview:save`로 소스를 `preview/cheap-meals.patch`에 저장한다.
+
+실행·복구·수동 QA·실제 API와 제약은 **[저렴한 한 끼 찾기 안내](docs/CHEAP_MEALS.md)**를 따른다. 세븐일레븐 0건은 현재 dev 데이터의 미수집 상태다. 과거 알뜰 지도 기록은 [THRIFTY_PREVIEW](docs/THRIFTY_PREVIEW.md)에 남겼다.
 
 ## Android와 기존 KMP
 

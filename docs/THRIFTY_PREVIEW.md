@@ -1,5 +1,7 @@
 # 알뜰 지도 로컬 Preview
 
+> 이 문서는 10월 27일 알뜰 지도 Preview의 과거 기록이다. 현재 manifest·실행 브랜치는 10월 29일 [저렴한 한 끼 찾기](CHEAP_MEALS.md)로 전환했다. 최신 실행법과 검증 상태는 해당 문서를 따른다.
+
 ## 범위와 소스
 
 팀 dev 웹을 배포하지 않고 **실제 dev API + 최신 React + 알뜰 지도**를 개인 iPhone WKWebView에서 확인한다. 기본 앱은 계속 `https://dev.jachwi-sunbae.kr`을 사용한다. 알뜰 기능은 로컬 Preview에만 있다.

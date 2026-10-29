@@ -1,0 +1,3145 @@
+diff --git a/frontend/README.md b/frontend/README.md
+index 88d640a..a80e1f5 100644
+--- a/frontend/README.md
++++ b/frontend/README.md
+@@ -6,6 +6,8 @@ React 19·TypeScript 6·Webpack 5 기반 모바일 우선 SPA입니다.
+ 
+ ## 관련 문서
+ 
++로컬 Preview의 홈 진입 카드·전체/식당/편의점/배달 기능은 [저렴한 한 끼 찾기](docs/cheap-meals.md)를 참고하세요. 최신 인증과 라우터를 유지하며 실제 dev API를 사용합니다.
++
+ 체크리스트 집계 막대와 범례는 괜찮음=초록, 주의=빨강, 미확인=회색을 사용합니다. 동네 찾기 통근 범례도 홈 집계처럼 짧은 세로 색상 막대와 텍스트로 표시하며, 통근 구간의 파랑·초록·빨강 의미는 유지합니다.
+ 
+ 페이지 전환의 화면 파일 로딩은 공용 `ProgressCircle`(40px)로 표시합니다. 홈(`/properties`)은 사진·텍스트 형태의 매물 스켈레톤을 사용하며 목록 데이터 로딩에도 같은 스켈레톤을 재사용합니다. 실제 진행률을 알 수 없어 원형 로딩은 불확정 회전으로 표시합니다. `LazyRouteBoundary`의 fallback만 변경하면 기존 안내 UI로 되돌릴 수 있으며 오류·재시도 화면은 유지합니다.
+diff --git a/frontend/docs/cheap-meals.md b/frontend/docs/cheap-meals.md
+new file mode 100644
+index 0000000..5badec0
+--- /dev/null
++++ b/frontend/docs/cheap-meals.md
+@@ -0,0 +1,39 @@
++# 저렴한 한 끼 찾기
++
++로컬 Preview 기능이다. 최신 develop `021267b`의 인증·라우터·Emotion 구성에 통합했으며 팀 dev/prod에는 배포하지 않았다.
++
++## 화면과 상태
++
++홈 GuideCard 아래 `오늘 한 끼, 저렴하게` 카드가 `/cheap-meals`로 이동한다. 기본은 전체이며 식당/편의점/배달은 `?tab=restaurant|convenience|delivery`로 선택한다. 각 탭에 처음 진입할 때만 API를 요청하고 방문한 패널은 숨겨서 필터·스크롤·더 보기 개수·식당 조회 위치와 반경을 유지한다. 모달 상세는 Router history로 열어 뒤로가기 시 먼저 닫고 배경 스크롤과 초점을 복원한다.
++
++- 식당: 기존 착한가격업소 기능을 최신 지도 컴포넌트에 통합한다. 주소 검색·명시적 GPS 요청·500m/1km/2km·마커·목록·상세·전화·길찾기·지도 이동 후 재검색을 제공한다. 비음식점 업종과 메뉴 가격 원문을 유지한다. SDK 인증 실패는 지도 영역에서 안내한다. 지도 재시도는 폐기된 SDK를 다시 초기화하도록 페이지 전체를 새로고침하므로 메모리 필터는 초기화된다.
++- 편의점: 이마트24 기본, 세븐일레븐, 전체/1+1/2+1/할인/기타 행사. 3+1·골라담기 및 UNKNOWN을 누락하지 않는다. 24개씩 더 보기, 이미지 실패 대체, 공식 출처·수집 시각·매장별 차이를 안내한다. 판매가격을 행사 유형으로 나누지 않는다.
++- 배달: 전체 기본, 배민/쿠팡이츠, 실제 할인·최소 주문·기간·조건·확인 시각. null은 정보 없음. 최종 결제금액이나 주문 URL을 만들지 않는다.
++
++## API
++
++기존 인증 `apiRequest`, `responseParsers`, TanStack Query를 사용한다. 카테고리별 API는 실제 dev 서버의 다음 네 조회다.
++
++```text
++GET /api/maps/good-price-stores?latitude=...&longitude=...&radius=...
++GET /api/promotions?brand=EMART24
++GET /api/promotions?brand=SEVEN_ELEVEN
++GET /api/delivery-discount-offers
++```
++
++행사 필터·배달 플랫폼은 클라이언트에서 처리한다. 서버 페이지네이션은 없다. 수집 시각이 null인 0건은 미수집 안내, 수집 후 0건·필터 0건·오류는 각각 구분한다. API가 실패하면 fixture로 대체하지 않는다. 2026-10-29 dev에서는 이마트24 2,337개, 세븐일레븐 미수집 0개, 배달 108개가 응답했다.
++
++## 실행과 검증
++
++Node 22.23.1을 사용한다. iPhone Preview는 이 독립 clone의 상위 개인 `mobile-kmp` 저장소에서 `npm run dev:preview`로 실행한다. 해당 어댑터가 HTTPS origin, dev 전용 프록시, Secure/HttpOnly cookie, WSS, `ENABLE_MSW=false`, 실제 네이버 provider를 강제한다. 키는 ignored `.env.local`에 두고 로그나 Git에 포함하지 않는다. 상세 실행법·인증서·iPhone 수동 확인은 개인 저장소의 `docs/CHEAP_MEALS.md`에 있다.
++
++```sh
++cd frontend
++npm run lint
++npm run format:check
++npm run typecheck
++npm test
++npm run build
++```
++
++새 API·페이지 테스트는 `test/features/{good-price,meal-deals}`와 `test/pages/cheap-meals`에 있다. 지도 SDK의 늦은 인증 실패와 정리 회귀는 `test/features/map`에 있다. 실제 API·WKWebView 검사는 개인 저장소의 검증 스크립트/XCTest로 수행하며 테스트 fixture와 구분한다. UT 이벤트 수집은 이번 구현에 없다.
+diff --git a/frontend/src/app/router/AppRoutes.tsx b/frontend/src/app/router/AppRoutes.tsx
+index d5557e2..474ce1c 100644
+--- a/frontend/src/app/router/AppRoutes.tsx
++++ b/frontend/src/app/router/AppRoutes.tsx
+@@ -10,6 +10,7 @@ import { RECORDS_PATH } from '@/shared/lib/navigation/appPaths';
+ import LazyRouteBoundary from './LazyRouteBoundary';
+ import ProtectedRoute from './ProtectedRoute';
+ 
++const CheapMealsPage = lazy(() => import('@/pages/cheap-meals/CheapMealsPage'));
+ const DesignHomePage = lazy(() => import('@/pages/design-home/DesignHomePage'));
+ const DesignRecordsPage = lazy(() => import('@/pages/design-records/DesignRecordsPage'));
+ const NeighborhoodPreviewPage = lazy(() => import('@/pages/neighborhood-preview/NeighborhoodPreviewPage'));
+@@ -100,6 +101,7 @@ const AppRoutes = () => (
+     <Route path="/login" element={<Navigate to="/" replace />} />
+     {/* 첫 주소(`/`)를 포함한 회원 화면은 자동 로그인(복원 또는 익명 회원 생성)을 마친 뒤 그린다. */}
+     <Route element={<ProtectedRoute />}>
++      <Route path="/cheap-meals" element={lazyPage(<CheapMealsPage />)} />
+       <Route path="/" element={lazyPage(<DesignHomePage />)} />
+       <Route path="/properties/:propertyId?" element={<RecordsRoute />}>
+         <Route index element={lazyPage(<PropertyDetailPage />)} />
+diff --git a/frontend/src/features/good-price/api/goodPriceApi.ts b/frontend/src/features/good-price/api/goodPriceApi.ts
+new file mode 100644
+index 0000000..3f7f5a5
+--- /dev/null
++++ b/frontend/src/features/good-price/api/goodPriceApi.ts
+@@ -0,0 +1,79 @@
++import { useQuery } from '@tanstack/react-query';
++
++import { apiRequest } from '@/features/auth/api/apiClient';
++import { readArray, readInteger, readNullableString, readRecord, readString } from '@/shared/api/responseParsers';
++import { usePublicConfig } from '@/shared/config/PublicConfigContext';
++import type { PublicConfig } from '@/shared/config/publicConfigTypes';
++
++import type { GoodPriceResult, GoodPriceStore } from '../model/GoodPriceStore';
++
++const coordinate = (record: Record<string, unknown>, key: string): number => {
++  const value = record[key];
++  if (typeof value !== 'number' || !Number.isFinite(value)) throw new Error('업소 좌표가 올바르지 않습니다.');
++  return value;
++};
++
++const parseStore = (value: unknown): GoodPriceStore => {
++  const store = readRecord(value);
++  return {
++    id: readInteger(store, 'id'),
++    name: readString(store, 'name'),
++    businessType: readString(store, 'businessType'),
++    phone: readNullableString(store, 'phone'),
++    address: readString(store, 'address'),
++    latitude: coordinate(store, 'latitude'),
++    longitude: coordinate(store, 'longitude'),
++    distanceMeters: readInteger(store, 'distanceMeters'),
++    menus: readArray(store, 'menus').map((value) => {
++      const menu = readRecord(value);
++      return { name: readString(menu, 'name'), price: readNullableString(menu, 'price') };
++    }),
++  };
++};
++
++export const parseGoodPriceResult = (value: unknown): GoodPriceResult => {
++  const result = readRecord(value);
++  const center = readRecord(result.center);
++  const radius = readInteger(result, 'radius');
++  if (radius !== 500 && radius !== 1000 && radius !== 2000) throw new Error('조회 반경이 올바르지 않습니다.');
++  const stores = readArray(result, 'stores').map(parseStore);
++  const count = readInteger(result, 'count');
++  if (count !== stores.length) throw new Error('업소 개수가 응답과 일치하지 않습니다.');
++  return {
++    center: { latitude: coordinate(center, 'latitude'), longitude: coordinate(center, 'longitude') },
++    radius,
++    count,
++    dataAsOf: readNullableString(result, 'dataAsOf'),
++    stores,
++  };
++};
++
++export const fetchGoodPriceStores = (
++  config: PublicConfig,
++  center: GoodPriceResult['center'],
++  radius: GoodPriceResult['radius'],
++  signal?: AbortSignal,
++) =>
++  apiRequest({
++    config,
++    path: `/api/maps/good-price-stores?latitude=${center.latitude}&longitude=${center.longitude}&radius=${radius}`,
++    signal,
++    parseData: parseGoodPriceResult,
++  });
++
++export const useGoodPriceStores = (
++  center: GoodPriceResult['center'] | null,
++  radius: GoodPriceResult['radius'],
++  active = true,
++) => {
++  const config = usePublicConfig();
++  return useQuery({
++    queryKey: ['good-price-stores', config.apiBaseUrl, center?.latitude, center?.longitude, radius],
++    enabled: active && center !== null,
++    queryFn: ({ signal }) => {
++      if (center === null) throw new Error('동네를 먼저 선택해 주세요.');
++      return fetchGoodPriceStores(config, center, radius, signal);
++    },
++    staleTime: 60_000,
++  });
++};
+diff --git a/frontend/src/features/good-price/model/GoodPriceStore.ts b/frontend/src/features/good-price/model/GoodPriceStore.ts
+new file mode 100644
+index 0000000..aa722db
+--- /dev/null
++++ b/frontend/src/features/good-price/model/GoodPriceStore.ts
+@@ -0,0 +1,22 @@
++export type GoodPriceStore = {
++  id: number;
++  name: string;
++  businessType: string;
++  phone: string | null;
++  address: string;
++  latitude: number;
++  longitude: number;
++  distanceMeters: number;
++  menus: Array<{ name: string; price: string | null }>;
++};
++
++export type GoodPriceResult = {
++  center: { latitude: number; longitude: number };
++  radius: 500 | 1000 | 2000;
++  count: number;
++  dataAsOf: string | null;
++  stores: GoodPriceStore[];
++};
++
++export const formatStoreDistance = (meters: number): string =>
++  meters < 1000 ? `${meters}m` : `${(meters / 1000).toFixed(1)}km`;
+diff --git a/frontend/src/features/map/hooks/useNaverMap.ts b/frontend/src/features/map/hooks/useNaverMap.ts
+index 454bac5..2e1fee2 100644
+--- a/frontend/src/features/map/hooks/useNaverMap.ts
++++ b/frontend/src/features/map/hooks/useNaverMap.ts
+@@ -5,7 +5,13 @@ import { usePublicConfig } from '@/shared/config/PublicConfigContext';
+ import { clampToSouthKorea } from '../lib/mapLocation';
+ import { markerScale, markerSignature, markerZIndex } from '../lib/mapMarkerPresentation';
+ import { createMapRegionLayer, READY_TIMEOUT_MS } from '../lib/mapRegionLayer';
+-import { type LiveMap, type LiveOverlay, naverEngine } from '../lib/naverMapEngine';
++import {
++  isNaverSdkAvailable,
++  type LiveMap,
++  type LiveOverlay,
++  NAVER_AUTH_FAILURE_EVENT,
++  naverEngine,
++} from '../lib/naverMapEngine';
+ import type { MapCanvasProps } from '../model/MapCanvas';
+ import { createMapCoordinateMenuElement } from '../ui/map-coordinate-menu/MapCoordinateMenu';
+ import { createMapMarkerElement } from '../ui/map-marker/MapMarkerView';
+@@ -102,6 +108,22 @@ const useNaverMap = ({
+     let listeners: unknown[] = [];
+     let readyFrame: number | null = null;
+ 
++    const handleAuthFailure = () => {
++      // 폐기된 SDK를 호출하지 않고 지도만 중단하여 실제 API 목록·상세를 계속 사용할 수 있게 한다.
++      if (readyFrame !== null) window.cancelAnimationFrame(readyFrame);
++      readyFrame = null;
++      mapRef.current = null;
++      map = null;
++      regionLayerRef.current?.dispose(true);
++      regionLayerRef.current = null;
++      overlaysRef.current.clear();
++      circlesRef.current = [];
++      containerRef.current?.replaceChildren();
++      setMapReady(false);
++      setRenderReady(false);
++      setSdkError(true);
++    };
++    window.addEventListener(NAVER_AUTH_FAILURE_EVENT, handleAuthFailure);
+     setSdkError(false);
+     setMapReady(false);
+     setRenderReady(false);
+@@ -123,7 +145,7 @@ const useNaverMap = ({
+           }),
+           engine.addListener(map, 'idle', () => {
+             setGestureActive(false);
+-            if (map === null) return;
++            if (map === null || !isNaverSdkAvailable()) return;
+             setSettledVersion((current) => current + 1);
+             const nextCenter = engine.getCenter(map);
+             callbackRef.current.onCenterChange?.(nextCenter.latitude, nextCenter.longitude);
+@@ -151,22 +173,23 @@ const useNaverMap = ({
+ 
+     return () => {
+       disposed = true;
++      window.removeEventListener(NAVER_AUTH_FAILURE_EVENT, handleAuthFailure);
+       if (readyFrame !== null) window.cancelAnimationFrame(readyFrame);
+       listeners.forEach((listener) => engine.removeListener(listener));
+       listeners = [];
+       setGestureActive(false);
+-      overlaysRef.current.forEach(({ overlay }) => overlay.setMap(null));
++      if (isNaverSdkAvailable()) overlaysRef.current.forEach(({ overlay }) => overlay.setMap(null));
+       overlaysRef.current.clear();
+-      circlesRef.current.forEach((circle) => circle.setMap(null));
++      if (isNaverSdkAvailable()) circlesRef.current.forEach((circle) => circle.setMap(null));
+       circlesRef.current = [];
+       circleSignatureRef.current = '';
+-      if (map !== null) engine.destroy(map);
++      if (map !== null && isNaverSdkAvailable()) engine.destroy(map);
+       mapRef.current = null;
+     };
+   }, [engine, liveMode]);
+ 
+   useEffect(() => {
+-    if (animateView || !liveMode || !mapReady || mapRef.current === null) return;
++    if (animateView || !liveMode || !mapReady || mapRef.current === null || !isNaverSdkAvailable()) return;
+     const current = engine.getCenter(mapRef.current);
+     if (
+       Math.abs(current.latitude - boundedCenter.latitude) < 0.0000001 &&
+@@ -178,7 +201,7 @@ const useNaverMap = ({
+ 
+   useEffect(() => {
+     const map = mapRef.current;
+-    if (!animateView || !liveMode || !mapReady || map === null) return;
++    if (!animateView || !liveMode || !mapReady || map === null || !isNaverSdkAvailable()) return;
+     const current = engine.getCenter(map);
+     if (
+       Math.abs(current.latitude - boundedCenter.latitude) < 0.0000001 &&
+@@ -206,7 +229,14 @@ const useNaverMap = ({
+       relayoutFrame = window.requestAnimationFrame(() => {
+         relayoutFrame = null;
+         const container = containerRef.current;
+-        if (container === null || container.clientWidth === 0 || container.clientHeight === 0) return;
++        if (
++          container === null ||
++          container.clientWidth === 0 ||
++          container.clientHeight === 0 ||
++          mapRef.current !== map ||
++          !isNaverSdkAvailable()
++        )
++          return;
+         const size = `${container.clientWidth}x${container.clientHeight}`;
+         if (size === previousSize) return;
+         previousSize = size;
+@@ -223,13 +253,21 @@ const useNaverMap = ({
+ 
+   useEffect(() => {
+     const map = mapRef.current;
+-    if (animateView || !liveMode || !mapReady || map === null || engine.getZoom(map) === level) return;
++    if (
++      animateView ||
++      !liveMode ||
++      !mapReady ||
++      map === null ||
++      !isNaverSdkAvailable() ||
++      engine.getZoom(map) === level
++    )
++      return;
+     engine.setZoom(map, level);
+   }, [engine, level, liveMode, mapReady, animateView]);
+ 
+   useEffect(() => {
+     const map = mapRef.current;
+-    if (!liveMode || !mapReady || map === null || gestureActiveRef.current) return;
++    if (!liveMode || !mapReady || map === null || gestureActiveRef.current || !isNaverSdkAvailable()) return;
+     // 달라진 마커만 다시 그린다. 전부 지웠다 만들면 지도를 옮길 때마다 깜빡인다.
+     const previous = overlaysRef.current;
+     const next = new Map<string, { signature: string; overlay: LiveOverlay; content: HTMLElement }>();
+@@ -264,11 +302,11 @@ const useNaverMap = ({
+ 
+   useEffect(() => {
+     const map = mapRef.current;
+-    if (!liveMode || !mapReady || map === null || gestureActiveRef.current) return;
++    if (!liveMode || !mapReady || map === null || gestureActiveRef.current || !isNaverSdkAvailable()) return;
+     const signature = `${circleRadii}:${radiusCenter.latitude}:${radiusCenter.longitude}`;
+     if (signature === circleSignatureRef.current) return;
+     circleSignatureRef.current = signature;
+-    circlesRef.current.forEach((circle) => circle.setMap(null));
++    if (isNaverSdkAvailable()) circlesRef.current.forEach((circle) => circle.setMap(null));
+     circlesRef.current = (circleRadii === '' ? [] : circleRadii.split(',').map(Number)).map((radius) =>
+       engine.createCircle(map, engine.latLng(radiusCenter.latitude, radiusCenter.longitude), radius),
+     );
+@@ -300,7 +338,9 @@ const useNaverMap = ({
+       content,
+       30,
+     );
+-    return () => overlay.setMap(null);
++    return () => {
++      if (isNaverSdkAvailable()) overlay.setMap(null);
++    };
+   }, [coordinateAction, engine, liveMode, mapReady]);
+ 
+   useEffect(() => {
+@@ -335,7 +375,7 @@ const useNaverMap = ({
+     );
+     regionLayerRef.current = layer;
+     return () => {
+-      layer.dispose();
++      layer.dispose(!isNaverSdkAvailable());
+       if (regionLayerRef.current === layer) regionLayerRef.current = null;
+     };
+   }, [engine, liveMode, mapReady]);
+diff --git a/frontend/src/features/map/lib/mapRegionLayer.ts b/frontend/src/features/map/lib/mapRegionLayer.ts
+index ff9e8ef..82684ca 100644
+--- a/frontend/src/features/map/lib/mapRegionLayer.ts
++++ b/frontend/src/features/map/lib/mapRegionLayer.ts
+@@ -227,9 +227,9 @@ export const createMapRegionLayer = (
+       latest = { regions, selectedId };
+       apply();
+     },
+-    dispose: () => {
++    dispose: (sdkUnavailable = false) => {
+       cancelPending();
+-      entries.forEach(remove);
++      if (!sdkUnavailable) entries.forEach(remove);
+       entries.clear();
+     },
+   };
+diff --git a/frontend/src/features/map/lib/naverMapEngine.ts b/frontend/src/features/map/lib/naverMapEngine.ts
+index a25f536..a2095dc 100644
+--- a/frontend/src/features/map/lib/naverMapEngine.ts
++++ b/frontend/src/features/map/lib/naverMapEngine.ts
+@@ -7,14 +7,24 @@ const MIN_NAVER_ZOOM = 6;
+ const toNaverZoom = (level: number): number => clamp(NAVER_ZOOM_BASE - level, MIN_NAVER_ZOOM, 21);
+ const toMapLevel = (zoom: number): number => clamp(NAVER_ZOOM_BASE - zoom, 1, 14);
+ let naverSdkPromise: Promise<void> | null = null;
++let authFailed = false;
++export const NAVER_AUTH_FAILURE_EVENT = 'jachwi:naver-auth-failure';
++export const isNaverSdkAvailable = () => !authFailed && window.naver?.maps != null;
+ 
+ const loadNaverSdk = (clientId: string): Promise<void> => {
++  if (authFailed) return Promise.reject(new Error('Naver Maps 인증에 실패했습니다.'));
+   if (naverSdkPromise !== null) return naverSdkPromise;
+-  if (window.naver?.maps !== undefined) return Promise.resolve();
++  if (isNaverSdkAvailable()) return Promise.resolve();
+   naverSdkPromise = new Promise((resolve, reject) => {
++    // 인증 응답은 SDK ready 이후에도 도착하며, 실패하면 SDK가 내부 객체를 폐기한다.
++    window.navermap_authFailure = () => {
++      authFailed = true;
++      reject(new Error('Naver Maps 인증에 실패했습니다.'));
++      window.dispatchEvent(new Event(NAVER_AUTH_FAILURE_EVENT));
++    };
+     const existing = document.querySelector<HTMLScriptElement>('script[data-jachwi-naver-map]');
+     const ready = () => {
+-      if (window.naver?.maps === undefined) {
++      if (!isNaverSdkAvailable()) {
+         naverSdkPromise = null;
+         document.querySelector('script[data-jachwi-naver-map]')?.remove();
+         reject(new Error('Naver Maps SDK를 불러오지 못했습니다.'));
+@@ -127,7 +137,7 @@ export const naverEngine = (clientId: string, customStyleId?: string): LiveEngin
+   addListener: (map, event, callback) =>
+     window.naver!.maps.Event.addListener(map, event, (value) => callback(value?.coord?.lat(), value?.coord?.lng())),
+   removeListener: (listener) => {
+-    if (listener !== undefined && window.naver?.maps !== undefined) window.naver.maps.Event.removeListener(listener);
++    if (listener !== undefined && isNaverSdkAvailable()) window.naver!.maps.Event.removeListener(listener);
+   },
+   createOverlay: (map, marker, content, zIndex) => {
+     const overlay = new window.naver!.maps.OverlayView();
+diff --git a/frontend/src/features/map/model/MapCanvas.ts b/frontend/src/features/map/model/MapCanvas.ts
+index 0160590..61d1fb3 100644
+--- a/frontend/src/features/map/model/MapCanvas.ts
++++ b/frontend/src/features/map/model/MapCanvas.ts
+@@ -21,6 +21,7 @@ export type MapCoordinateMenu = {
+ 
+ export type MapCanvasProps = {
+   animateView?: boolean;
++  onRetry?: () => void;
+   coordinateAction?: {
+     latitude: number;
+     longitude: number;
+diff --git a/frontend/src/features/map/ui/map-canvas/MapCanvas.styles.ts b/frontend/src/features/map/ui/map-canvas/MapCanvas.styles.ts
+index 704fb9b..9b7978d 100644
+--- a/frontend/src/features/map/ui/map-canvas/MapCanvas.styles.ts
++++ b/frontend/src/features/map/ui/map-canvas/MapCanvas.styles.ts
+@@ -201,9 +201,17 @@ export const mapError = css`
+   inset: 0;
+   background: var(--color-canvas);
+ 
+-  & .page {
+-    min-height: 100%;
+-    padding: 1rem;
++  display: flex;
++  flex-direction: column;
++  align-items: center;
++  justify-content: flex-start;
++  padding: 2rem 1rem;
++  gap: 0.6rem;
++  text-align: center;
++  & p {
++    margin: 0;
++    font-size: 0.8rem;
++    color: var(--color-ink-soft);
+   }
+ `;
+ 
+diff --git a/frontend/src/features/map/ui/map-canvas/MapCanvas.tsx b/frontend/src/features/map/ui/map-canvas/MapCanvas.tsx
+index 8f1f55d..0990c58 100644
+--- a/frontend/src/features/map/ui/map-canvas/MapCanvas.tsx
++++ b/frontend/src/features/map/ui/map-canvas/MapCanvas.tsx
+@@ -1,8 +1,8 @@
+ import type { CSSProperties } from 'react';
+ import { useMemo } from 'react';
+ 
++import { Button } from '@/shared/ui/button/Button';
+ import ProgressCircle from '@/shared/ui/progress-circle/ProgressCircle';
+-import StatusPanel from '@/shared/ui/status-panel/StatusPanel';
+ 
+ import useNaverMap from '../../hooks/useNaverMap';
+ import { clampToSouthKorea } from '../../lib/mapLocation';
+@@ -28,6 +28,7 @@ const demoMarkerStyle = (marker: MapMarker, center: { latitude: number; longitud
+ 
+ const MapCanvas = ({
+   center,
++  onRetry,
+   animateView = false,
+   coordinateAction,
+   coordinateMenu,
+@@ -275,8 +276,14 @@ const MapCanvas = ({
+         </div>
+       )}
+       {sdkError && (
+-        <div className={styles.mapError}>
+-          <StatusPanel title="지도를 연결할 수 없어요." description="잠시 후 다시 시도해 주세요." tone="error" />
++        <div className={styles.mapError} role="alert">
++          <strong>지도를 연결할 수 없어요.</strong>
++          <p>잠시 후 다시 시도해 주세요.</p>
++          {onRetry && (
++            <Button variant="secondary" onClick={onRetry}>
++              지도 다시 시도
++            </Button>
++          )}
+         </div>
+       )}
+     </div>
+diff --git a/frontend/src/features/meal-deals/api/mealDealsApi.ts b/frontend/src/features/meal-deals/api/mealDealsApi.ts
+new file mode 100644
+index 0000000..ac145c8
+--- /dev/null
++++ b/frontend/src/features/meal-deals/api/mealDealsApi.ts
+@@ -0,0 +1,145 @@
++import { useQuery } from '@tanstack/react-query';
++
++import { ApiError, apiRequest } from '@/features/auth/api/apiClient';
++import {
++  readArray,
++  readInteger,
++  readNullableInteger,
++  readNullableString,
++  readRecord,
++  readString,
++} from '@/shared/api/responseParsers';
++import { usePublicConfig } from '@/shared/config/PublicConfigContext';
++import type { PublicConfig } from '@/shared/config/publicConfigTypes';
++
++export const BRANDS = { EMART24: '이마트24', SEVEN_ELEVEN: '세븐일레븐' } as const;
++export const PLATFORMS = { BAEMIN: '배민', COUPANG_EATS: '쿠팡이츠' } as const;
++export const PROMOTIONS = {
++  ONE_PLUS_ONE: '1+1',
++  TWO_PLUS_ONE: '2+1',
++  THREE_PLUS_ONE: '3+1',
++  SALE: '할인',
++  PICK_AND_MIX: '골라담기',
++} as const;
++export const CATEGORIES = {
++  MEAL: '간편식',
++  SNACK: '과자',
++  BEVERAGE: '음료',
++  HOUSEHOLD_GOODS: '생활용품',
++  UNKNOWN: '카테고리 정보 없음',
++} as const;
++export type Brand = keyof typeof BRANDS;
++export type Platform = keyof typeof PLATFORMS;
++export type Promotion = keyof typeof PROMOTIONS;
++export type Product = {
++  name: string;
++  price: number;
++  imageUrl: string;
++  category: keyof typeof CATEGORIES;
++  promotionType: Promotion;
++};
++export type PromotionResult = {
++  brand: Brand;
++  count: number;
++  collectedAt: string | null;
++  sourceUrl: string;
++  products: Product[];
++};
++export type DeliveryOffer = {
++  id: number;
++  platform: Platform;
++  brandName: string;
++  discountAmount: number;
++  minOrderAmount: number | null;
++  startDate: string | null;
++  endDate: string | null;
++  conditions: string | null;
++  lastVerifiedAt: string;
++};
++
++const member = <T extends string>(value: string, values: Record<T, string>): T => {
++  if (!Object.prototype.hasOwnProperty.call(values, value)) throw new Error('지원하지 않는 행사 응답입니다.');
++  return value as T;
++};
++
++export const parsePromotionResult = (value: unknown): PromotionResult => {
++  const data = readRecord(value);
++  const products = readArray(data, 'products').map((value) => {
++    const product = readRecord(value);
++    return {
++      name: readString(product, 'name'),
++      price: readInteger(product, 'price'),
++      imageUrl: readString(product, 'imageUrl', { allowEmpty: true }),
++      category: member(readString(product, 'category'), CATEGORIES),
++      promotionType: member(readString(product, 'promotionType'), PROMOTIONS),
++    };
++  });
++  const count = readInteger(data, 'count');
++  if (count !== products.length) throw new Error('상품 개수가 응답과 일치하지 않습니다.');
++  return {
++    brand: member(readString(data, 'brand'), BRANDS),
++    count,
++    products,
++    collectedAt: readNullableString(data, 'collectedAt'),
++    sourceUrl: readString(data, 'sourceUrl'),
++  };
++};
++
++export const parseDeliveryOffers = (value: unknown): DeliveryOffer[] => {
++  if (!Array.isArray(value)) throw new Error('배달 할인 목록이 필요합니다.');
++  return value.map((value) => {
++    const offer = readRecord(value);
++    return {
++      id: readInteger(offer, 'id'),
++      platform: member(readString(offer, 'platform'), PLATFORMS),
++      brandName: readString(offer, 'brandName'),
++      discountAmount: readInteger(offer, 'discountAmount'),
++      minOrderAmount: readNullableInteger(offer, 'minOrderAmount'),
++      startDate: readNullableString(offer, 'startDate'),
++      endDate: readNullableString(offer, 'endDate'),
++      conditions: readNullableString(offer, 'conditions', { allowEmpty: true }),
++      lastVerifiedAt: readString(offer, 'lastVerifiedAt'),
++    };
++  });
++};
++
++export const fetchPromotions = (config: PublicConfig, brand: Brand, signal?: AbortSignal) =>
++  apiRequest({
++    config,
++    path: `/api/promotions?brand=${brand}`,
++    signal,
++    parseData: (value) => {
++      const result = parsePromotionResult(value);
++      if (result.brand !== brand) throw new Error('요청한 브랜드와 응답이 다릅니다.');
++      return result;
++    },
++  });
++export const fetchDeliveryOffers = (config: PublicConfig, signal?: AbortSignal) =>
++  apiRequest({ config, path: '/api/delivery-discount-offers', signal, parseData: parseDeliveryOffers });
++
++export const usePromotions = (brand: Brand, enabled: boolean) => {
++  const config = usePublicConfig();
++  return useQuery({
++    queryKey: ['promotions', config.apiBaseUrl, brand],
++    enabled,
++    queryFn: ({ signal }) => fetchPromotions(config, brand, signal),
++    staleTime: 300_000,
++  });
++};
++export const useDeliveryOffers = (enabled: boolean) => {
++  const config = usePublicConfig();
++  return useQuery({
++    queryKey: ['delivery-discount-offers', config.apiBaseUrl],
++    enabled,
++    queryFn: ({ signal }) => fetchDeliveryOffers(config, signal),
++    staleTime: 300_000,
++  });
++};
++export const describeMealError = (error: unknown) => ({
++  title:
++    error instanceof ApiError && error.kind === 'authentication-ended'
++      ? '로그인 연결을 다시 확인해 주세요'
++      : '정보를 불러오지 못했어요',
++  description: '연결 상태를 확인하고 다시 시도해 주세요.',
++  canRetry: !(error instanceof ApiError && error.kind === 'authentication-ended'),
++});
+diff --git a/frontend/src/features/meal-deals/lib/presentation.ts b/frontend/src/features/meal-deals/lib/presentation.ts
+new file mode 100644
+index 0000000..87f5040
+--- /dev/null
++++ b/frontend/src/features/meal-deals/lib/presentation.ts
+@@ -0,0 +1,23 @@
++export const won = (value: number) => `${value.toLocaleString('ko-KR')}원`;
++export const formatKst = (value: string | null) => {
++  if (value === null) return '정보 없음';
++  // 배달 lastVerifiedAt은 오프셋 없는 KST, 편의점 collectedAt은 +09:00을 포함한다.
++  const date = new Date(/[zZ]|[+-]\d{2}:\d{2}$/.test(value) ? value : `${value}+09:00`);
++  if (Number.isNaN(date.getTime())) return value;
++  return new Intl.DateTimeFormat('ko-KR', {
++    timeZone: 'Asia/Seoul',
++    year: 'numeric',
++    month: 'long',
++    day: 'numeric',
++    hour: '2-digit',
++    minute: '2-digit',
++  }).format(date);
++};
++export const httpsUrl = (value: string): string | undefined => {
++  try {
++    const url = new URL(value);
++    return url.protocol === 'https:' && !url.username && !url.password ? url.href : undefined;
++  } catch {
++    return undefined;
++  }
++};
+diff --git a/frontend/src/global.d.ts b/frontend/src/global.d.ts
+index fb350c6..3aa9da6 100644
+--- a/frontend/src/global.d.ts
++++ b/frontend/src/global.d.ts
+@@ -11,6 +11,7 @@ declare const __ADMIN_BOUNDARY_BASE_URL__: string;
+ 
+ interface Window {
+   jachwiNaverSdkReady?: () => void;
++  navermap_authFailure?: () => void;
+   naver?: { maps: NaverMapsNamespace };
+ }
+ 
+diff --git a/frontend/src/pages/cheap-meals/CheapMealsPage.tsx b/frontend/src/pages/cheap-meals/CheapMealsPage.tsx
+new file mode 100644
+index 0000000..d15af5d
+--- /dev/null
++++ b/frontend/src/pages/cheap-meals/CheapMealsPage.tsx
+@@ -0,0 +1,283 @@
++import { css } from '@emotion/css';
++import { useEffect, useState } from 'react';
++import { Link } from 'react-router-dom';
++
++import Icon from '@/shared/ui/icon/Icon';
++
++import useMealNavigation, { MEAL_TABS, type MealTab } from './hooks/useMealNavigation';
++import ConveniencePanel from './ui/ConveniencePanel';
++import DeliveryPanel from './ui/DeliveryPanel';
++import MealDetails from './ui/MealDetails';
++import RestaurantPanel from './ui/RestaurantPanel';
++
++const choices = [
++  {
++    tab: 'restaurant',
++    title: '주변 착한가격 식당',
++    description: '내 주변 저렴한 가게와 메뉴 가격 확인',
++    icon: 'map',
++    mark: '01',
++  },
++  {
++    tab: 'convenience',
++    title: '편의점 할인',
++    description: '이마트24 · 세븐일레븐 행사상품',
++    icon: 'inbox',
++    mark: '02',
++  },
++  { tab: 'delivery', title: '배달 할인', description: '배민 · 쿠팡이츠 할인 혜택', icon: 'home', mark: '03' },
++] as const;
++const CheapMealsPage = () => {
++  const navigation = useMealNavigation();
++  const { tab, selectTab } = navigation;
++  const [visited, setVisited] = useState<MealTab[]>([tab]);
++  useEffect(() => {
++    setVisited((previous) => (previous.includes(tab) ? previous : [...previous, tab]));
++  }, [tab]);
++  return (
++    <main className={styles.page}>
++      <header className={styles.header}>
++        <Link to="/" aria-label="홈으로 돌아가기">
++          <Icon name="chevron-left" size={24} />
++        </Link>
++        <h1>저렴한 한 끼 찾기</h1>
++      </header>
++      <div role="tablist" aria-label="한 끼 카테고리" className={styles.tabs}>
++        {(Object.keys(MEAL_TABS) as MealTab[]).map((value, index, all) => (
++          <button
++            key={value}
++            type="button"
++            role="tab"
++            id={`meal-tab-${value}`}
++            aria-controls={`meal-panel-${value}`}
++            aria-selected={tab === value}
++            tabIndex={tab === value ? 0 : -1}
++            onClick={() => selectTab(value)}
++            onKeyDown={(event) => {
++              const next =
++                event.key === 'ArrowRight'
++                  ? all[(index + 1) % all.length]
++                  : event.key === 'ArrowLeft'
++                    ? all[(index + all.length - 1) % all.length]
++                    : event.key === 'Home'
++                      ? all[0]
++                      : event.key === 'End'
++                        ? all[all.length - 1]
++                        : null;
++              if (next) {
++                event.preventDefault();
++                selectTab(next);
++                document.getElementById(`meal-tab-${next}`)?.focus();
++              }
++            }}
++          >
++            {MEAL_TABS[value]}
++          </button>
++        ))}
++      </div>
++      <div
++        role="tabpanel"
++        id="meal-panel-all"
++        aria-labelledby="meal-tab-all"
++        hidden={tab !== 'all'}
++        className={styles.scrollPanel}
++      >
++        <section className={styles.overview}>
++          <span className={styles.eyebrow}>오늘의 식비를 조금 가볍게</span>
++          <h2>오늘은 어떻게 아껴볼까요?</h2>
++          <p>세 가지 방법 중 원하는 것을 선택해 보세요.</p>
++          <div className={styles.choices}>
++            {choices.map((choice) => (
++              <button type="button" key={choice.tab} onClick={() => selectTab(choice.tab)}>
++                <span className={styles.choiceIcon}>
++                  <Icon name={choice.icon} size={26} />
++                </span>
++                <span className={styles.choiceText}>
++                  <strong>{choice.title}</strong>
++                  <span>{choice.description}</span>
++                </span>
++                <Icon name="chevron-right" size={20} />
++              </button>
++            ))}
++          </div>
++        </section>
++      </div>
++      {(['restaurant', 'convenience', 'delivery'] as const).map((value) => (
++        <div
++          key={value}
++          role="tabpanel"
++          id={`meal-panel-${value}`}
++          aria-labelledby={`meal-tab-${value}`}
++          hidden={tab !== value}
++          className={value === 'restaurant' ? styles.mapPanel : styles.scrollPanel}
++        >
++          {(visited.includes(value) || tab === value) &&
++            (value === 'restaurant' ? (
++              <RestaurantPanel active={tab === value} />
++            ) : value === 'convenience' ? (
++              <ConveniencePanel active={tab === value} onDetail={navigation.openDetail} />
++            ) : (
++              <DeliveryPanel active={tab === value} onDetail={navigation.openDetail} />
++            ))}
++        </div>
++      ))}
++      {navigation.detail && <MealDetails detail={navigation.detail} onClose={navigation.closeDetail} />}
++    </main>
++  );
++};
++const styles = {
++  page: css`
++    label: CheapMealsPage-page;
++    height: 100dvh;
++    max-height: 100%;
++    display: flex;
++    flex-direction: column;
++    width: 100%;
++    max-width: 60rem;
++    margin: auto;
++    background: var(--color-surface);
++    color: var(--color-ink);
++    overflow: hidden;
++    padding-top: env(safe-area-inset-top);
++    box-sizing: border-box;
++  `,
++  header: css`
++    label: CheapMealsPage-header;
++    display: flex;
++    align-items: center;
++    gap: 0.5rem;
++    flex-shrink: 0;
++    padding: 0.45rem 0.75rem;
++    & a {
++      display: grid;
++      place-items: center;
++      width: 44px;
++      height: 44px;
++      color: inherit;
++    }
++    & h1 {
++      margin: 0;
++      font-size: 1.1rem;
++      letter-spacing: -0.035em;
++    }
++  `,
++  tabs: css`
++    label: CheapMealsPage-tabs;
++    display: grid;
++    grid-template-columns: repeat(4, minmax(0, 1fr));
++    padding: 0 1rem;
++    border-bottom: 1px solid var(--color-border);
++    flex-shrink: 0;
++    & button {
++      min-height: 48px;
++      border: 0;
++      border-bottom: 3px solid transparent;
++      background: none;
++      font: inherit;
++      font-size: 0.9rem;
++      color: var(--color-ink-soft);
++      cursor: pointer;
++    }
++    & button[aria-selected='true'] {
++      border-color: var(--color-brand-yellow);
++      color: var(--color-ink);
++      font-weight: 800;
++    }
++  `,
++  scrollPanel: css`
++    label: CheapMealsPage-scrollPanel;
++    flex: 1;
++    min-height: 0;
++    overflow-y: auto;
++    overscroll-behavior: contain;
++    padding-bottom: env(safe-area-inset-bottom);
++    &[hidden] {
++      display: none;
++    }
++  `,
++  mapPanel: css`
++    label: CheapMealsPage-mapPanel;
++    flex: 1;
++    min-height: 0;
++    &[hidden] {
++      display: none;
++    }
++  `,
++  overview: css`
++    label: CheapMealsPage-overview;
++    padding: 2rem 1.25rem;
++    max-width: 45rem;
++    margin: auto;
++    & h2 {
++      font-size: 1.4rem;
++      letter-spacing: -0.04em;
++      margin: 0.5rem 0 0.7rem;
++    }
++    & > p {
++      font-size: 0.85rem;
++      color: var(--color-ink-soft);
++      line-height: 1.6;
++      margin: 0;
++    }
++  `,
++  eyebrow: css`
++    label: CheapMealsPage-eyebrow;
++    font-size: 0.75rem;
++    color: var(--color-ink-soft);
++  `,
++  choices: css`
++    label: CheapMealsPage-choices;
++    display: grid;
++    gap: 1rem;
++    margin-top: 1.8rem;
++    & > button {
++      display: flex;
++      align-items: center;
++      gap: 0.9rem;
++      width: 100%;
++      min-height: 7rem;
++      padding: 1.1rem;
++      border: 1px solid var(--color-border);
++      border-radius: var(--radius-card);
++      color: var(--color-ink);
++      background: var(--color-surface);
++      font: inherit;
++      text-align: left;
++      cursor: pointer;
++    }
++    & > button:hover {
++      background: var(--color-surface-muted);
++    }
++    & > button > svg {
++      flex-shrink: 0;
++    }
++  `,
++  choiceIcon: css`
++    label: CheapMealsPage-choiceIcon;
++    flex-shrink: 0;
++    width: 2.6rem;
++    height: 2.6rem;
++    border-radius: 0.8rem;
++    display: grid;
++    place-items: center;
++    background: color-mix(in srgb, var(--color-brand-yellow) 20%, white);
++  `,
++  choiceText: css`
++    label: CheapMealsPage-choiceText;
++    display: flex;
++    flex: 1;
++    min-width: 0;
++    flex-direction: column;
++    gap: 0.5rem;
++    & strong {
++      font-size: 1rem;
++      letter-spacing: -0.03em;
++    }
++    & > span {
++      font-size: 0.75rem;
++      color: var(--color-ink-soft);
++      line-height: 1.6;
++    }
++  `,
++};
++export default CheapMealsPage;
+diff --git a/frontend/src/pages/cheap-meals/hooks/useMealNavigation.ts b/frontend/src/pages/cheap-meals/hooks/useMealNavigation.ts
+new file mode 100644
+index 0000000..5afca75
+--- /dev/null
++++ b/frontend/src/pages/cheap-meals/hooks/useMealNavigation.ts
+@@ -0,0 +1,32 @@
++import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
++
++import type { Brand, DeliveryOffer, Product } from '@/features/meal-deals/api/mealDealsApi';
++
++export const MEAL_TABS = { all: '전체', restaurant: '식당', convenience: '편의점', delivery: '배달' } as const;
++export type MealTab = keyof typeof MEAL_TABS;
++export type MealDetail =
++  { kind: 'product'; product: Product; brand: Brand; sourceUrl: string } | { kind: 'delivery'; offer: DeliveryOffer };
++type SheetState = { cheapMealDetail?: MealDetail };
++
++const useMealNavigation = () => {
++  const [params, setParams] = useSearchParams();
++  const location = useLocation();
++  const navigate = useNavigate();
++  const value = params.get('tab') ?? 'all';
++  const tab: MealTab = Object.prototype.hasOwnProperty.call(MEAL_TABS, value) ? (value as MealTab) : 'all';
++  const detail = (location.state as SheetState | null)?.cheapMealDetail;
++  return {
++    tab,
++    detail,
++    selectTab: (next: MealTab) => {
++      if (tab === next) return;
++      const query = new URLSearchParams();
++      if (next !== 'all') query.set('tab', next);
++      setParams(query, { state: null });
++    },
++    openDetail: (detail: MealDetail) =>
++      navigate({ pathname: location.pathname, search: location.search }, { state: { cheapMealDetail: detail } }),
++    closeDetail: () => navigate(-1),
++  };
++};
++export default useMealNavigation;
+diff --git a/frontend/src/pages/cheap-meals/hooks/useRestaurantMap.ts b/frontend/src/pages/cheap-meals/hooks/useRestaurantMap.ts
+new file mode 100644
+index 0000000..f1c8fca
+--- /dev/null
++++ b/frontend/src/pages/cheap-meals/hooks/useRestaurantMap.ts
+@@ -0,0 +1,141 @@
++import { useEffect, useMemo, useRef, useState } from 'react';
++import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
++
++import { useGoodPriceStores } from '@/features/good-price/api/goodPriceApi';
++import type { GoodPriceResult } from '@/features/good-price/model/GoodPriceStore';
++import {
++  coordinatesAreClose,
++  DEFAULT_MAP_CENTER,
++  isInSouthKorea,
++  type MapCoordinate,
++  requestCurrentMapLocation,
++} from '@/features/map/lib/mapLocation';
++import type { MapMarker } from '@/features/map/model/Map';
++
++import storePin from '../ui/store-pin.svg';
++
++export type RestaurantArea = MapCoordinate & { label: string };
++const useRestaurantMap = (active: boolean) => {
++  const [params, setParams] = useSearchParams();
++  const location = useLocation();
++  const navigate = useNavigate();
++  const [area, setArea] = useState<RestaurantArea>({ ...DEFAULT_MAP_CENTER, label: '판교 주변' });
++  const [viewport, setViewport] = useState<MapCoordinate>(area);
++  const [radius, setRadius] = useState<GoodPriceResult['radius']>(1000);
++  const [level, setLevel] = useState(6);
++  const [listOpen, setListOpen] = useState(true);
++  const [isLocating, setLocating] = useState(false);
++  const [locationError, setLocationError] = useState<string | null>(null);
++  const requestId = useRef(0);
++  useEffect(() => {
++    if (!active) setLocating(false);
++    return () => {
++      requestId.current += 1;
++    };
++  }, [active]);
++  const query = useGoodPriceStores(area, radius, active);
++  const selectedStore = query.data?.stores.find((store) => String(store.id) === params.get('store')) ?? null;
++  const markers = useMemo<MapMarker[]>(
++    () =>
++      query.data?.stores.map((store) => ({
++        id: String(store.id),
++        latitude: store.latitude,
++        longitude: store.longitude,
++        label: `${store.name} 상세 보기`,
++        image: { src: storePin },
++        actionable: true,
++      })) ?? [],
++    [query.data],
++  );
++  const clearSelection = () =>
++    setParams(
++      (previous) => {
++        const next = new URLSearchParams(previous);
++        next.delete('store');
++        next.delete('search');
++        return next;
++      },
++      { replace: true, state: null },
++    );
++  const chooseArea = (next: RestaurantArea) => {
++    requestId.current += 1;
++    setLocating(false);
++    setLocationError(null);
++    setArea(next);
++    setViewport(next);
++    setListOpen(true);
++    clearSelection();
++  };
++  const locate = async () => {
++    const id = ++requestId.current;
++    setLocating(true);
++    setLocationError(null);
++    try {
++      const coordinate = await requestCurrentMapLocation();
++      if (id !== requestId.current) return;
++      if (!isInSouthKorea(coordinate)) throw new Error('국내 위치가 필요합니다.');
++      chooseArea({ ...coordinate, label: '현재 위치 주변' });
++    } catch {
++      if (id === requestId.current) {
++        setLocating(false);
++        setLocationError('현재 위치를 확인하지 못했어요. 권한을 확인하거나 주소를 검색해 주세요.');
++      }
++    }
++  };
++  return {
++    area,
++    viewport,
++    radius,
++    level,
++    query,
++    markers,
++    selectedStore,
++    listOpen,
++    isLocating,
++    locationError,
++    isMapMoved: !coordinatesAreClose(area, viewport),
++    isSearchOpen: params.get('search') === '1',
++    chooseArea,
++    locate,
++    changeLevel: setLevel,
++    setListOpen,
++    moveMap: (latitude: number, longitude: number) =>
++      setViewport((old) => (coordinatesAreClose(old, { latitude, longitude }) ? old : { latitude, longitude })),
++    searchMap: () => chooseArea({ ...viewport, label: '지도에서 선택한 위치' }),
++    selectRadius: (value: GoodPriceResult['radius']) => {
++      setRadius(value);
++      setLevel(value === 500 ? 5 : value === 1000 ? 6 : 7);
++      setViewport(area);
++      setListOpen(true);
++      clearSelection();
++    },
++    openSearch: () =>
++      setParams(
++        (previous) => {
++          const next = new URLSearchParams(previous);
++          next.set('search', '1');
++          return next;
++        },
++        { state: { restaurantOverlay: true } },
++      ),
++    openStore: (id: number) => {
++      const store = query.data?.stores.find((store) => store.id === id);
++      if (!store) return;
++      setViewport(store);
++      setListOpen(true);
++      setParams(
++        (previous) => {
++          const next = new URLSearchParams(previous);
++          next.set('store', String(id));
++          return next;
++        },
++        { state: { restaurantOverlay: true } },
++      );
++    },
++    closeOverlay: () => {
++      if ((location.state as { restaurantOverlay?: boolean } | null)?.restaurantOverlay) navigate(-1);
++      else clearSelection();
++    },
++  };
++};
++export default useRestaurantMap;
+diff --git a/frontend/src/pages/cheap-meals/ui/ConveniencePanel.tsx b/frontend/src/pages/cheap-meals/ui/ConveniencePanel.tsx
+new file mode 100644
+index 0000000..322b757
+--- /dev/null
++++ b/frontend/src/pages/cheap-meals/ui/ConveniencePanel.tsx
+@@ -0,0 +1,187 @@
++import { css } from '@emotion/css';
++import { useState } from 'react';
++
++import {
++  type Brand,
++  BRANDS,
++  describeMealError,
++  type Promotion,
++  PROMOTIONS,
++  usePromotions,
++} from '@/features/meal-deals/api/mealDealsApi';
++import { formatKst, httpsUrl, won } from '@/features/meal-deals/lib/presentation';
++import { Button } from '@/shared/ui/button/Button';
++import QueryState from '@/shared/ui/query-state/QueryState';
++import { SegmentedControl, SegmentedControlItem } from '@/shared/ui/segmented-control/SegmentedControl';
++
++import type { MealDetail } from '../hooks/useMealNavigation';
++import ProductImage from './ProductImage';
++
++import * as shared from './MealContent.styles';
++
++type Filter = 'ALL' | 'OTHER' | Promotion;
++const filters: { value: Filter; label: string }[] = [
++  { value: 'ALL', label: '전체' },
++  { value: 'ONE_PLUS_ONE', label: '1+1' },
++  { value: 'TWO_PLUS_ONE', label: '2+1' },
++  { value: 'SALE', label: '할인' },
++  { value: 'OTHER', label: '기타 행사' },
++];
++const ConveniencePanel = ({ active, onDetail }: { active: boolean; onDetail: (detail: MealDetail) => void }) => {
++  const [brand, setBrand] = useState<Brand>('EMART24');
++  const [filter, setFilter] = useState<Filter>('ALL');
++  const [limit, setLimit] = useState(24);
++  const query = usePromotions(brand, active);
++  return (
++    <section className={shared.section} aria-label="편의점 행사상품">
++      <h2>편의점 행사상품</h2>
++      <p className={shared.description}>지금 진행 중인 브랜드 행사 살펴보기</p>
++      <SegmentedControl
++        value={brand}
++        onValueChange={(value) => {
++          setBrand(value as Brand);
++          setLimit(24);
++        }}
++        aria-label="편의점 브랜드"
++      >
++        {Object.entries(BRANDS).map(([value, label]) => (
++          <SegmentedControlItem key={value} value={value}>
++            {label}
++          </SegmentedControlItem>
++        ))}
++      </SegmentedControl>
++      <div className={shared.filters} role="group" aria-label="행사 유형">
++        {filters.map(({ value, label }) => (
++          <button
++            key={value}
++            type="button"
++            aria-pressed={filter === value}
++            onClick={() => {
++              setFilter(value);
++              setLimit(24);
++            }}
++          >
++            {label}
++          </button>
++        ))}
++      </div>
++      <QueryState query={query} loadingTitle="행사상품을 불러오고 있어요" describeError={describeMealError}>
++        {(result) => {
++          const products = result.products.filter(
++            (product) =>
++              filter === 'ALL' ||
++              (filter === 'OTHER'
++                ? ['THREE_PLUS_ONE', 'PICK_AND_MIX'].includes(product.promotionType)
++                : product.promotionType === filter),
++          );
++          const source = httpsUrl(result.sourceUrl);
++          return (
++            <>
++              <p className={shared.description} aria-live="polite">
++                {BRANDS[brand]} · {products.length.toLocaleString('ko-KR')}개 상품
++              </p>
++              {products.length === 0 ? (
++                <div className={shared.empty}>
++                  <strong>
++                    {result.collectedAt === null && result.count === 0
++                      ? '아직 행사정보를 수집하지 않았어요'
++                      : result.count === 0
++                        ? '현재 등록된 행사상품이 없어요'
++                        : '이 행사 유형의 상품이 없어요'}
++                  </strong>
++                  <p>
++                    {result.collectedAt === null
++                      ? '공식 행사 페이지에서 최신 정보를 확인해 주세요.'
++                      : '다른 행사 유형이나 브랜드를 살펴보세요.'}
++                  </p>
++                </div>
++              ) : (
++                <ul className={styles.grid} aria-label="행사상품 목록">
++                  {products.slice(0, limit).map((product, index) => (
++                    <li key={`${index}-${product.name}-${product.promotionType}`}>
++                      <button
++                        type="button"
++                        className={styles.card}
++                        onClick={() => onDetail({ kind: 'product', product, brand, sourceUrl: result.sourceUrl })}
++                        aria-label={`${product.name} 상세 보기`}
++                      >
++                        <ProductImage src={product.imageUrl} name={product.name} />
++                        <span className={shared.badge}>{PROMOTIONS[product.promotionType]}</span>
++                        <strong className={styles.name}>{product.name}</strong>
++                        <span className={styles.price}>{won(product.price)}</span>
++                        <small>판매가격</small>
++                      </button>
++                    </li>
++                  ))}
++                </ul>
++              )}
++              {products.length > limit && (
++                <Button fullWidth variant="secondary" onClick={() => setLimit((value) => value + 24)}>
++                  상품 더 보기 ({Math.min(limit, products.length)}/{products.length})
++                </Button>
++              )}
++              <footer className={shared.note}>
++                <p>
++                  마지막 수집:{' '}
++                  {result.collectedAt === null ? '아직 수집되지 않음' : `${formatKst(result.collectedAt)} (한국 시간)`}
++                </p>
++                {source && (
++                  <a href={source} target="_blank" rel="noreferrer">
++                    {BRANDS[brand]} 공식 행사정보 ↗
++                  </a>
++                )}
++                <p>
++                  개별 매장에 따라 행사 적용과 재고가 다를 수 있어요. 표시한 금액은 상품 판매가격이며, 행사 조건은 공식
++                  안내를 확인해 주세요.
++                </p>
++              </footer>
++            </>
++          );
++        }}
++      </QueryState>
++    </section>
++  );
++};
++const styles = {
++  grid: css`
++    label: ConveniencePanel-grid;
++    list-style: none;
++    padding: 0;
++    margin: 0 0 1.5rem;
++    display: grid;
++    grid-template-columns: repeat(2, minmax(0, 1fr));
++    gap: 1.4rem 0.8rem;
++  `,
++  card: css`
++    label: ConveniencePanel-card;
++    display: flex;
++    flex-direction: column;
++    gap: 0.55rem;
++    width: 100%;
++    height: 100%;
++    padding: 0;
++    border: 0;
++    background: transparent;
++    color: var(--color-ink);
++    text-align: left;
++    cursor: pointer;
++    font: inherit;
++    & small {
++      color: var(--color-ink-soft);
++      font-size: 0.72rem;
++    }
++  `,
++  name: css`
++    label: ConveniencePanel-name;
++    font-size: 0.87rem;
++    line-height: 1.5;
++    overflow-wrap: anywhere;
++  `,
++  price: css`
++    label: ConveniencePanel-price;
++    font-weight: 800;
++    font-size: 1.06rem;
++    margin-top: auto;
++  `,
++};
++export default ConveniencePanel;
+diff --git a/frontend/src/pages/cheap-meals/ui/DeliveryPanel.tsx b/frontend/src/pages/cheap-meals/ui/DeliveryPanel.tsx
+new file mode 100644
+index 0000000..6539e55
+--- /dev/null
++++ b/frontend/src/pages/cheap-meals/ui/DeliveryPanel.tsx
+@@ -0,0 +1,152 @@
++import { css } from '@emotion/css';
++import { useState } from 'react';
++
++import { describeMealError, type Platform, PLATFORMS, useDeliveryOffers } from '@/features/meal-deals/api/mealDealsApi';
++import { won } from '@/features/meal-deals/lib/presentation';
++import { Button } from '@/shared/ui/button/Button';
++import QueryState from '@/shared/ui/query-state/QueryState';
++import { SegmentedControl, SegmentedControlItem } from '@/shared/ui/segmented-control/SegmentedControl';
++
++import type { MealDetail } from '../hooks/useMealNavigation';
++
++import * as shared from './MealContent.styles';
++
++const DeliveryPanel = ({ active, onDetail }: { active: boolean; onDetail: (detail: MealDetail) => void }) => {
++  const [platform, setPlatform] = useState<Platform | 'ALL'>('ALL');
++  const [limit, setLimit] = useState(24);
++  const query = useDeliveryOffers(active);
++  return (
++    <section className={shared.section} aria-label="배달 할인정보">
++      <h2>배달 할인 모아보기</h2>
++      <p className={shared.description}>할인금액뿐 아니라 적용 조건도 확인해 보세요.</p>
++      <SegmentedControl
++        value={platform}
++        onValueChange={(value) => {
++          setPlatform(value as Platform | 'ALL');
++          setLimit(24);
++        }}
++        aria-label="배달 플랫폼"
++      >
++        <SegmentedControlItem value="ALL">전체</SegmentedControlItem>
++        {Object.entries(PLATFORMS).map(([value, label]) => (
++          <SegmentedControlItem key={value} value={value}>
++            {label}
++          </SegmentedControlItem>
++        ))}
++      </SegmentedControl>
++      <QueryState query={query} loadingTitle="배달 혜택을 불러오고 있어요" describeError={describeMealError}>
++        {(data) => {
++          const offers = data.filter((offer) => platform === 'ALL' || offer.platform === platform);
++          return (
++            <>
++              <p className={styles.count} aria-live="polite">
++                {offers.length}개 혜택
++              </p>
++              {offers.length === 0 ? (
++                <p className={shared.empty}>현재 유효한 할인정보가 없어요.</p>
++              ) : (
++                <ul className={styles.list} aria-label="배달 혜택 목록">
++                  {offers.slice(0, limit).map((offer) => (
++                    <li key={offer.id}>
++                      <button
++                        className={styles.card}
++                        type="button"
++                        onClick={() => onDetail({ kind: 'delivery', offer })}
++                        aria-label={`${PLATFORMS[offer.platform]} ${offer.brandName} 할인 상세 보기`}
++                      >
++                        <span className={shared.badge}>{PLATFORMS[offer.platform]}</span>
++                        <span className={styles.brand}>{offer.brandName}</span>
++                        <strong className={styles.amount}>{won(offer.discountAmount)} 할인</strong>
++                        <span className={styles.condition}>
++                          <span>최소 주문금액</span>
++                          <strong>{offer.minOrderAmount === null ? '정보 없음' : won(offer.minOrderAmount)}</strong>
++                        </span>
++                        <span className={styles.condition}>
++                          <span>적용 조건</span>
++                          <span>{offer.conditions?.trim() || '정보 없음'}</span>
++                        </span>
++                        <span className={styles.more}>상세 보기 →</span>
++                      </button>
++                    </li>
++                  ))}
++                </ul>
++              )}
++              {offers.length > limit && (
++                <Button fullWidth variant="secondary" onClick={() => setLimit((value) => value + 24)}>
++                  혜택 더 보기 ({limit}/{offers.length})
++                </Button>
++              )}
++              <p className={shared.note}>
++                배달비·중복 할인·매장별 조건은 별도예요. 주문 앱에서 실제 적용 여부와 최종 결제금액을 확인해 주세요.
++              </p>
++            </>
++          );
++        }}
++      </QueryState>
++    </section>
++  );
++};
++const styles = {
++  count: css`
++    label: DeliveryPanel-count;
++    margin: 1rem 0;
++    color: var(--color-ink-soft);
++    font-size: 0.8rem;
++  `,
++  list: css`
++    label: DeliveryPanel-list;
++    display: grid;
++    gap: 1rem;
++    list-style: none;
++    padding: 0;
++    margin: 0 0 1.5rem;
++  `,
++  card: css`
++    label: DeliveryPanel-card;
++    display: flex;
++    flex-direction: column;
++    gap: 0.6rem;
++    width: 100%;
++    padding: 1.25rem;
++    border: 1px solid var(--color-border);
++    border-radius: var(--radius-card);
++    text-align: left;
++    background: var(--color-surface);
++    color: var(--color-ink);
++    cursor: pointer;
++    font: inherit;
++    overflow-wrap: anywhere;
++  `,
++  brand: css`
++    label: DeliveryPanel-brand;
++    font-weight: 650;
++    margin-top: 0.4rem;
++  `,
++  amount: css`
++    label: DeliveryPanel-amount;
++    font-size: 1.65rem;
++    letter-spacing: -0.04em;
++    margin-bottom: 0.6rem;
++  `,
++  condition: css`
++    label: DeliveryPanel-condition;
++    display: grid;
++    grid-template-columns: 6rem minmax(0, 1fr);
++    gap: 0.4rem;
++    width: 100%;
++    font-size: 0.8rem;
++    line-height: 1.6;
++    white-space: pre-wrap;
++    & > :first-child {
++      color: var(--color-ink-soft);
++    }
++  `,
++  more: css`
++    label: DeliveryPanel-more;
++    align-self: flex-end;
++    margin-top: 0.7rem;
++    font-size: 0.8rem;
++    color: var(--color-ink-soft);
++  `,
++};
++export default DeliveryPanel;
+diff --git a/frontend/src/pages/cheap-meals/ui/MealContent.styles.ts b/frontend/src/pages/cheap-meals/ui/MealContent.styles.ts
+new file mode 100644
+index 0000000..3b37baa
+--- /dev/null
++++ b/frontend/src/pages/cheap-meals/ui/MealContent.styles.ts
+@@ -0,0 +1,106 @@
++import { css } from '@emotion/css';
++
++export const section = css`
++  label: MealContent-section;
++  padding: 1.4rem 1.25rem 2rem;
++  max-width: 45rem;
++  margin: auto;
++  & h2 {
++    margin: 0 0 0.5rem;
++    font-size: 1.35rem;
++    letter-spacing: -0.035em;
++  }
++  & p {
++    line-height: 1.6;
++  }
++`;
++export const description = css`
++  label: MealContent-description;
++  color: var(--color-ink-soft);
++  font-size: 0.85rem;
++  margin: 0 0 1.25rem;
++`;
++export const filters = css`
++  label: MealContent-filters;
++  display: flex;
++  flex-wrap: wrap;
++  gap: 0.4rem;
++  margin: 1rem 0;
++  & button {
++    min-height: 44px;
++    padding: 0.5rem 0.85rem;
++    border: 1px solid var(--color-border);
++    border-radius: 99px;
++    background: var(--color-surface);
++    color: var(--color-ink-soft);
++    font: inherit;
++    font-size: 0.8rem;
++    cursor: pointer;
++  }
++  & button[aria-pressed='true'] {
++    border-color: var(--color-action);
++    background: var(--color-action);
++    color: var(--color-on-action);
++    font-weight: 700;
++  }
++`;
++export const note = css`
++  label: MealContent-note;
++  color: var(--color-ink-soft);
++  font-size: 0.78rem;
++  line-height: 1.7;
++  margin-top: 1.25rem;
++  padding: 1rem;
++  border-radius: var(--radius-md);
++  background: var(--color-surface-muted);
++  overflow-wrap: anywhere;
++  & p {
++    margin: 0.4rem 0;
++  }
++  & a {
++    color: var(--color-primary);
++    text-underline-offset: 0.2em;
++    display: inline-flex;
++    align-items: center;
++    min-height: 44px;
++  }
++`;
++export const facts = css`
++  label: MealContent-facts;
++  display: grid;
++  gap: 1rem;
++  margin: 1.3rem 0;
++  & div {
++    display: grid;
++    grid-template-columns: 6.5rem minmax(0, 1fr);
++    gap: 0.6rem;
++    font-size: 0.86rem;
++    line-height: 1.6;
++  }
++  & dt {
++    color: var(--color-ink-soft);
++  }
++  & dd {
++    margin: 0;
++    white-space: pre-wrap;
++    overflow-wrap: anywhere;
++  }
++`;
++export const empty = css`
++  label: MealContent-empty;
++  padding: 2rem 1rem;
++  text-align: center;
++  color: var(--color-ink-soft);
++  line-height: 1.7;
++`;
++export const badge = css`
++  label: MealContent-badge;
++  display: inline-flex;
++  width: fit-content;
++  padding: 0.3rem 0.6rem;
++  border-radius: 0.4rem;
++  font-size: 0.75rem;
++  font-weight: 800;
++  background: color-mix(in srgb, var(--color-brand-yellow) 24%, white);
++  color: var(--color-ink);
++`;
+diff --git a/frontend/src/pages/cheap-meals/ui/MealDetails.tsx b/frontend/src/pages/cheap-meals/ui/MealDetails.tsx
+new file mode 100644
+index 0000000..7e4dbd3
+--- /dev/null
++++ b/frontend/src/pages/cheap-meals/ui/MealDetails.tsx
+@@ -0,0 +1,98 @@
++import { css } from '@emotion/css';
++
++import { BRANDS, CATEGORIES, PLATFORMS, PROMOTIONS } from '@/features/meal-deals/api/mealDealsApi';
++import { formatKst, httpsUrl, won } from '@/features/meal-deals/lib/presentation';
++
++import type { MealDetail } from '../hooks/useMealNavigation';
++import MealSheet from './MealSheet';
++import ProductImage from './ProductImage';
++
++import * as shared from './MealContent.styles';
++
++const MealDetails = ({ detail, onClose }: { detail: MealDetail; onClose: () => void }) => {
++  if (detail.kind === 'product') {
++    const { product, brand, sourceUrl } = detail;
++    const source = httpsUrl(sourceUrl);
++    return (
++      <MealSheet title="상품 상세" onClose={onClose}>
++        <div className={styles.image}>
++          <ProductImage src={product.imageUrl} name={product.name} />
++        </div>
++        <p className={shared.description}>{BRANDS[brand]}</p>
++        <h3>{product.name}</h3>
++        <dl className={shared.facts}>
++          <div>
++            <dt>판매가격</dt>
++            <dd>{won(product.price)}</dd>
++          </div>
++          <div>
++            <dt>행사 유형</dt>
++            <dd>{PROMOTIONS[product.promotionType]}</dd>
++          </div>
++          <div>
++            <dt>상품 카테고리</dt>
++            <dd>{CATEGORIES[product.category]}</dd>
++          </div>
++        </dl>
++        <div className={shared.note}>
++          <strong>행사 안내</strong>
++          <p>
++            브랜드가 제공한 행사 유형과 판매가격입니다. 할인 적용 조건은 공식 행사 페이지를 확인해 주세요. 매장별 행사
++            적용과 재고는 다를 수 있어요.
++          </p>
++          {source && (
++            <a href={source} target="_blank" rel="noreferrer">
++              {BRANDS[brand]} 공식 행사 페이지 ↗
++            </a>
++          )}
++        </div>
++      </MealSheet>
++    );
++  }
++  const { offer } = detail;
++  return (
++    <MealSheet title="할인 상세" onClose={onClose}>
++      <span className={shared.badge}>{PLATFORMS[offer.platform]}</span>
++      <h3>{offer.brandName}</h3>
++      <strong className={styles.amount}>{won(offer.discountAmount)} 할인</strong>
++      <dl className={shared.facts}>
++        <div>
++          <dt>최소 주문금액</dt>
++          <dd>{offer.minOrderAmount === null ? '정보 없음' : won(offer.minOrderAmount)}</dd>
++        </div>
++        <div>
++          <dt>행사 시작일</dt>
++          <dd>{offer.startDate ?? '정보 없음'}</dd>
++        </div>
++        <div>
++          <dt>행사 종료일</dt>
++          <dd>{offer.endDate ?? '정보 없음'}</dd>
++        </div>
++        <div>
++          <dt>적용 조건</dt>
++          <dd>{offer.conditions?.trim() || '정보 없음'}</dd>
++        </div>
++        <div>
++          <dt>마지막 확인</dt>
++          <dd>{formatKst(offer.lastVerifiedAt)} (한국 시간)</dd>
++        </div>
++      </dl>
++      <p className={shared.note}>
++        배달비, 다른 할인과 주문 조건에 따라 최종 결제금액이 달라져요. 주문 전에 해당 앱에서 조건을 확인해 주세요.
++      </p>
++    </MealSheet>
++  );
++};
++const styles = {
++  image: css`
++    label: MealDetails-image;
++    max-width: 13rem;
++    margin: 0 auto 1.5rem;
++  `,
++  amount: css`
++    label: MealDetails-amount;
++    font-size: 1.8rem;
++    letter-spacing: -0.04em;
++  `,
++};
++export default MealDetails;
+diff --git a/frontend/src/pages/cheap-meals/ui/MealSheet.tsx b/frontend/src/pages/cheap-meals/ui/MealSheet.tsx
+new file mode 100644
+index 0000000..18c9eaa
+--- /dev/null
++++ b/frontend/src/pages/cheap-meals/ui/MealSheet.tsx
+@@ -0,0 +1,85 @@
++import { css } from '@emotion/css';
++import type { ReactNode } from 'react';
++import { useLayoutEffect, useRef } from 'react';
++import { createPortal } from 'react-dom';
++
++import BottomSheet from '@/shared/ui/bottom-sheet/BottomSheet';
++
++const MealSheet = ({ title, children, onClose }: { title: string; children: ReactNode; onClose: () => void }) => {
++  const ref = useRef<HTMLDialogElement>(null);
++  useLayoutEffect(() => {
++    const dialog = ref.current;
++    const focused = document.activeElement;
++    const overflow = document.body.style.overflow;
++    document.body.style.overflow = 'hidden';
++    dialog?.showModal();
++    return () => {
++      dialog?.close();
++      document.body.style.overflow = overflow;
++      if (focused instanceof HTMLElement && focused.isConnected) focused.focus({ preventScroll: true });
++    };
++  }, []);
++  return createPortal(
++    <dialog
++      ref={ref}
++      className={styles.dialog}
++      aria-label={title}
++      onKeyDownCapture={(event) => {
++        if (event.key === 'Escape') {
++          event.preventDefault();
++          event.stopPropagation();
++          onClose();
++        }
++      }}
++      onCancel={(event) => {
++        event.preventDefault();
++        onClose();
++      }}
++      onClick={(event) => {
++        if (event.target === event.currentTarget) onClose();
++      }}
++    >
++      <BottomSheet title={title} onClose={onClose} initialHeightPercent={80}>
++        <div className={styles.content}>{children}</div>
++      </BottomSheet>
++    </dialog>,
++    document.body,
++  );
++};
++const styles = {
++  dialog: css`
++    label: MealSheet-dialog;
++    position: fixed;
++    inset: 0;
++    width: 100%;
++    height: 100dvh;
++    max-width: none;
++    max-height: none;
++    margin: 0;
++    padding: 0;
++    border: 0;
++    background: transparent;
++    color: var(--color-ink);
++    overflow: hidden;
++    &::backdrop {
++      background: var(--color-overlay);
++    }
++    & .BottomSheet-sheet {
++      max-height: calc(100% - env(safe-area-inset-top) - 1rem);
++    }
++    & .BottomSheet-sheet header h2 {
++      white-space: normal;
++      overflow-wrap: anywhere;
++    }
++    & .BottomSheet-sheet header button {
++      min-width: 44px;
++      min-height: 44px;
++    }
++  `,
++  content: css`
++    label: MealSheet-content;
++    padding-bottom: max(1rem, env(safe-area-inset-bottom));
++    overflow-wrap: anywhere;
++  `,
++};
++export default MealSheet;
+diff --git a/frontend/src/pages/cheap-meals/ui/ProductImage.tsx b/frontend/src/pages/cheap-meals/ui/ProductImage.tsx
+new file mode 100644
+index 0000000..2b58ebb
+--- /dev/null
++++ b/frontend/src/pages/cheap-meals/ui/ProductImage.tsx
+@@ -0,0 +1,47 @@
++import { css } from '@emotion/css';
++import { useState } from 'react';
++
++import { httpsUrl } from '@/features/meal-deals/lib/presentation';
++import Icon from '@/shared/ui/icon/Icon';
++
++const ProductImage = ({ src, name }: { src: string; name: string }) => {
++  const [failedSource, setFailedSource] = useState<string | null>(null);
++  const url = httpsUrl(src);
++  return (
++    <div className={styles.frame}>
++      {url && failedSource !== src ? (
++        <img src={url} alt={name} loading="lazy" decoding="async" onError={() => setFailedSource(src)} />
++      ) : (
++        <span role="img" aria-label={`${name} 이미지 없음`}>
++          <Icon name="image" size={28} />
++          <small>이미지 준비 중</small>
++        </span>
++      )}
++    </div>
++  );
++};
++const styles = {
++  frame: css`
++    label: ProductImage-frame;
++    aspect-ratio: 1;
++    width: 100%;
++    display: grid;
++    place-items: center;
++    overflow: hidden;
++    border-radius: var(--radius-md);
++    background: var(--color-surface-muted);
++    & img {
++      width: 100%;
++      height: 100%;
++      object-fit: contain;
++    }
++    & span {
++      display: grid;
++      gap: 0.5rem;
++      justify-items: center;
++      color: var(--color-muted);
++      font-size: 0.75rem;
++    }
++  `,
++};
++export default ProductImage;
+diff --git a/frontend/src/pages/cheap-meals/ui/RestaurantPanel.tsx b/frontend/src/pages/cheap-meals/ui/RestaurantPanel.tsx
+new file mode 100644
+index 0000000..687c9b9
+--- /dev/null
++++ b/frontend/src/pages/cheap-meals/ui/RestaurantPanel.tsx
+@@ -0,0 +1,310 @@
++import { css } from '@emotion/css';
++
++import type { GoodPriceResult } from '@/features/good-price/model/GoodPriceStore';
++import useAddressSearch from '@/features/map/api/useAddressSearch';
++import AddressSearchResults from '@/features/map/ui/address-search-results/AddressSearchResults';
++import MapCanvas from '@/features/map/ui/map-canvas/MapCanvas';
++import BottomSheet from '@/shared/ui/bottom-sheet/BottomSheet';
++import { Button } from '@/shared/ui/button/Button';
++import Icon from '@/shared/ui/icon/Icon';
++import SearchField from '@/shared/ui/search-field/SearchField';
++
++import useRestaurantMap from '../hooks/useRestaurantMap';
++import MealSheet from './MealSheet';
++import StoreCard from './store-card/StoreCard';
++import StoreDetail from './store-detail/StoreDetail';
++
++import * as shared from './MealContent.styles';
++
++const RestaurantPanel = ({ active }: { active: boolean }) => {
++  const map = useRestaurantMap(active);
++  const search = useAddressSearch();
++  const data = map.query.isError ? undefined : map.query.data;
++  return (
++    <section className={styles.panel} aria-label="주변 착한가격업소">
++      <div className={styles.controls}>
++        <button type="button" className={styles.search} onClick={map.openSearch}>
++          <Icon name="search" size={18} />
++          <span>{map.area.label}</span>
++          <small>주소 검색</small>
++        </button>
++        <div className={styles.row}>
++          <div className={styles.radii} role="group" aria-label="탐색 반경">
++            {([500, 1000, 2000] as GoodPriceResult['radius'][]).map((radius) => (
++              <button
++                key={radius}
++                type="button"
++                aria-pressed={map.radius === radius}
++                onClick={() => map.selectRadius(radius)}
++              >
++                {radius === 500 ? '500m' : `${radius / 1000}km`}
++              </button>
++            ))}
++          </div>
++          <button
++            type="button"
++            className={styles.locate}
++            disabled={map.isLocating}
++            onClick={() => void map.locate()}
++            aria-label="현재 위치로 찾기"
++          >
++            <Icon name="locate" size={19} />
++            {map.isLocating ? '확인 중' : '현재 위치'}
++          </button>
++        </div>
++        <p className={styles.notice}>음식점 외 업종도 포함돼요. 가게별 원본 업종을 확인해 주세요.</p>
++        {map.locationError && (
++          <p className={styles.notice} role="alert">
++            {map.locationError}
++          </p>
++        )}
++      </div>
++      <div className={styles.map}>
++        {active && (
++          <MapCanvas
++            onRetry={() => window.location.reload()}
++            center={map.viewport}
++            markers={map.markers}
++            circles={[{ radiusMeters: map.radius, label: `${map.radius}m` }]}
++            radiusCenter={map.area}
++            level={map.level}
++            interactive
++            selectedMarkerId={map.selectedStore ? String(map.selectedStore.id) : null}
++            onSelectMarker={(marker) => map.openStore(Number(marker.id))}
++            onCenterChange={map.moveMap}
++            onLevelChange={map.changeLevel}
++          />
++        )}
++        {map.isMapMoved && (
++          <button type="button" className={styles.research} onClick={map.searchMap}>
++            이 위치에서 찾기
++          </button>
++        )}
++        {!map.listOpen ? (
++          <button type="button" className={styles.showList} onClick={() => map.setListOpen(true)}>
++            가게 목록 보기 {data ? `· ${data.count}곳` : ''}
++          </button>
++        ) : (
++          <BottomSheet
++            title={map.selectedStore?.name ?? `착한가격 가게 ${data?.count ?? 0}곳`}
++            initialHeightPercent={40}
++            onClose={() => {
++              if (map.selectedStore) map.closeOverlay();
++              else map.setListOpen(false);
++            }}
++            closeLabel={map.selectedStore ? '가게 상세 닫기' : '가게 목록 닫기'}
++            onBack={map.selectedStore ? map.closeOverlay : undefined}
++          >
++            {map.query.isPending ? (
++              <p role="status">주변 가게를 찾고 있어요…</p>
++            ) : map.query.isError ? (
++              <div role="alert">
++                <p>가게 정보를 불러오지 못했어요.</p>
++                <Button onClick={() => void map.query.refetch()}>다시 시도</Button>
++              </div>
++            ) : map.selectedStore ? (
++              <StoreDetail store={map.selectedStore} dataAsOf={data?.dataAsOf ?? null} />
++            ) : data?.count === 0 ? (
++              <div className={shared.empty}>
++                <p>이 반경 안에 등록된 가게가 없어요.</p>
++                <Button variant="secondary" onClick={map.openSearch}>
++                  다른 동네 찾기
++                </Button>
++              </div>
++            ) : (
++              <>
++                <p className={styles.notice}>가까운 순 · 기준 위치에서 직선거리 · 등록 가격</p>
++                <ul className={styles.list} aria-label="가게 목록">
++                  {data?.stores.map((store) => (
++                    <li key={store.id}>
++                      <StoreCard store={store} onSelect={map.openStore} />
++                    </li>
++                  ))}
++                </ul>
++                <p className={shared.note}>
++                  행정안전부 착한가격업소 현황 · {data?.dataAsOf ?? '기준일 정보 없음'}
++                  <br />
++                  방문 전 가격과 영업 여부를 확인해 주세요.
++                </p>
++              </>
++            )}
++          </BottomSheet>
++        )}
++      </div>
++      {map.isSearchOpen && active && (
++        <MealSheet title="어느 동네를 둘러볼까요?" onClose={map.closeOverlay}>
++          <Button fullWidth variant="secondary" isLoading={map.isLocating} onClick={() => void map.locate()}>
++            현재 위치로 찾기
++          </Button>
++          {map.locationError && <p role="alert">{map.locationError}</p>}
++          <div className={styles.addressSearch}>
++            <SearchField
++              label="동네 주소 검색"
++              placeholder="도로명이나 지번 주소 검색"
++              value={search.query}
++              onValueChange={search.changeQuery}
++              onSubmit={() => void search.submit()}
++            />
++          </div>
++          <AddressSearchResults
++            results={search.results}
++            status={search.status}
++            onSelect={(address) => {
++              map.chooseArea({
++                latitude: address.latitude,
++                longitude: address.longitude,
++                label: address.roadAddress ?? address.jibunAddress ?? '선택한 위치',
++              });
++              search.clear();
++            }}
++          />
++        </MealSheet>
++      )}
++    </section>
++  );
++};
++const styles = {
++  panel: css`
++    label: RestaurantPanel-panel;
++    height: 100%;
++    display: flex;
++    flex-direction: column;
++    min-height: 0;
++  `,
++  controls: css`
++    label: RestaurantPanel-controls;
++    padding: 0.8rem 1rem 0.5rem;
++    flex-shrink: 0;
++    border-bottom: 1px solid var(--color-border);
++  `,
++  search: css`
++    label: RestaurantPanel-search;
++    display: flex;
++    align-items: center;
++    gap: 0.55rem;
++    width: 100%;
++    min-height: 44px;
++    padding: 0.6rem 0.8rem;
++    border: 0;
++    border-radius: var(--radius-md);
++    background: var(--color-search-surface);
++    color: var(--color-ink);
++    font: inherit;
++    cursor: pointer;
++    & span {
++      flex: 1;
++      text-align: left;
++      font-size: 0.83rem;
++      overflow: hidden;
++      text-overflow: ellipsis;
++      white-space: nowrap;
++    }
++    & small {
++      flex-shrink: 0;
++      font-size: 0.7rem;
++    }
++  `,
++  row: css`
++    label: RestaurantPanel-row;
++    display: flex;
++    align-items: center;
++    justify-content: space-between;
++    gap: 0.5rem;
++    margin-top: 0.5rem;
++  `,
++  radii: css`
++    label: RestaurantPanel-radii;
++    display: flex;
++    gap: 0.3rem;
++    & button {
++      min-height: 44px;
++      padding: 0.4rem 0.7rem;
++      border: 1px solid var(--color-border);
++      border-radius: 99px;
++      background: var(--color-surface);
++      color: var(--color-ink);
++      font-size: 0.78rem;
++      cursor: pointer;
++    }
++    & button[aria-pressed='true'] {
++      background: var(--color-action);
++      color: var(--color-on-action);
++    }
++  `,
++  locate: css`
++    label: RestaurantPanel-locate;
++    display: flex;
++    align-items: center;
++    gap: 0.3rem;
++    min-height: 44px;
++    padding: 0.4rem;
++    background: none;
++    border: 0;
++    color: var(--color-ink);
++    font-size: 0.75rem;
++    cursor: pointer;
++  `,
++  notice: css`
++    label: RestaurantPanel-notice;
++    font-size: 0.7rem;
++    color: var(--color-ink-soft);
++    line-height: 1.5;
++    margin: 0.5rem 0 0.2rem;
++  `,
++  map: css`
++    label: RestaurantPanel-map;
++    flex: 1;
++    min-height: 0;
++    position: relative;
++    overflow: hidden;
++    & .BottomSheet-sheet header h2 {
++      white-space: normal;
++      overflow-wrap: anywhere;
++    }
++  `,
++  research: css`
++    label: RestaurantPanel-research;
++    position: absolute;
++    z-index: 25;
++    left: 50%;
++    top: 0.75rem;
++    transform: translateX(-50%);
++    border: 0;
++    border-radius: 99px;
++    padding: 0.7rem 1rem;
++    min-height: 44px;
++    background: var(--color-action);
++    color: var(--color-on-action);
++    font-weight: 700;
++    box-shadow: 0 2px 8px #0002;
++    cursor: pointer;
++    white-space: nowrap;
++  `,
++  showList: css`
++    label: RestaurantPanel-showList;
++    position: absolute;
++    bottom: max(1rem, env(safe-area-inset-bottom));
++    left: 50%;
++    transform: translateX(-50%);
++    z-index: 25;
++    min-height: 44px;
++    padding: 0.7rem 1.2rem;
++    border: 0;
++    border-radius: 99px;
++    background: var(--color-action);
++    color: var(--color-on-action);
++    cursor: pointer;
++    white-space: nowrap;
++  `,
++  list: css`
++    label: RestaurantPanel-list;
++    list-style: none;
++    padding: 0;
++    margin: 0;
++  `,
++  addressSearch: css`
++    label: RestaurantPanel-addressSearch;
++    margin-top: 1rem;
++  `,
++};
++export default RestaurantPanel;
+diff --git a/frontend/src/pages/cheap-meals/ui/store-card/StoreCard.tsx b/frontend/src/pages/cheap-meals/ui/store-card/StoreCard.tsx
+new file mode 100644
+index 0000000..eefa23b
+--- /dev/null
++++ b/frontend/src/pages/cheap-meals/ui/store-card/StoreCard.tsx
+@@ -0,0 +1,153 @@
++import { css } from '@emotion/css';
++
++import { formatStoreDistance, type GoodPriceStore } from '@/features/good-price/model/GoodPriceStore';
++import Icon from '@/shared/ui/icon/Icon';
++
++const StoreCard = ({ store, onSelect }: { store: GoodPriceStore; onSelect: (id: number) => void }) => (
++  <button
++    type="button"
++    className={styles.card}
++    onClick={() => onSelect(store.id)}
++    aria-label={`${store.name} 상세 보기`}
++  >
++    <span className={styles.topLine}>
++      <span className={styles.businessType}>{store.businessType}</span>
++      <span className={styles.distance}>직선 {formatStoreDistance(store.distanceMeters)}</span>
++    </span>
++    <span className={styles.name}>
++      {store.name}
++      <Icon name="chevron-right" size={18} />
++    </span>
++    <span className={styles.address}>{store.address}</span>
++    <span className={styles.menus}>
++      {store.menus.length === 0 ? (
++        <span className={styles.noMenu}>등록된 메뉴·가격 정보가 없어요</span>
++      ) : (
++        store.menus.slice(0, 2).map((menu, index) => (
++          <span className={styles.menu} key={`${index}-${menu.name}`}>
++            <span>{menu.name}</span>
++            <strong>{menu.price ?? '가격 정보 없음'}</strong>
++          </span>
++        ))
++      )}
++      {store.menus.length > 2 && <span className={styles.more}>메뉴·서비스 {store.menus.length - 2}개 더 보기</span>}
++    </span>
++  </button>
++);
++
++export default StoreCard;
++
++const styles = {
++  card: css`
++    label: StoreCard-card;
++
++    display: grid;
++    width: 100%;
++    gap: 0.55rem;
++    padding: 1.2rem 0;
++    border: 0;
++    border-bottom: 1px solid var(--color-border);
++    background: var(--color-surface);
++    color: var(--color-ink);
++    text-align: left;
++    cursor: pointer;
++  `,
++  topLine: css`
++    label: StoreCard-topLine;
++
++    display: flex;
++    align-items: center;
++    justify-content: space-between;
++    gap: 1rem;
++  `,
++  name: css`
++    label: StoreCard-name;
++
++    display: flex;
++    align-items: center;
++    justify-content: space-between;
++    gap: 1rem;
++
++    font-size: 1.06rem;
++    font-weight: 750;
++    letter-spacing: -0.035em;
++    overflow-wrap: anywhere;
++
++    & svg {
++      flex-shrink: 0;
++      color: var(--color-muted);
++    }
++  `,
++  menu: css`
++    label: StoreCard-menu;
++
++    display: flex;
++    align-items: center;
++    justify-content: space-between;
++    gap: 1rem;
++
++    align-items: baseline;
++    font-size: 0.84rem;
++    line-height: 1.4;
++
++    & span {
++      overflow-wrap: anywhere;
++      min-width: 0;
++    }
++    & strong {
++      overflow-wrap: anywhere;
++      min-width: 0;
++    }
++    & strong {
++      text-align: right;
++      max-width: 58%;
++      font-size: 0.9rem;
++      font-variant-numeric: tabular-nums;
++    }
++  `,
++  businessType: css`
++    label: StoreCard-businessType;
++
++    font-size: 0.7rem;
++    font-weight: 600;
++    color: var(--color-ink-soft);
++    background: var(--color-surface-muted);
++    padding: 0.22rem 0.5rem;
++    border-radius: 0.3rem;
++  `,
++  distance: css`
++    label: StoreCard-distance;
++
++    font-size: 0.75rem;
++    color: var(--color-ink-soft);
++  `,
++  address: css`
++    label: StoreCard-address;
++
++    color: var(--color-ink-soft);
++    font-size: 0.75rem;
++    line-height: 1.5;
++  `,
++  menus: css`
++    label: StoreCard-menus;
++
++    display: grid;
++    gap: 0.65rem;
++    margin-top: 0.35rem;
++    padding: 0.9rem;
++    border-radius: var(--radius-sm);
++    background: var(--color-surface-muted);
++  `,
++  more: css`
++    label: StoreCard-more;
++
++    font-size: 0.72rem;
++    color: var(--color-ink-soft);
++  `,
++  noMenu: css`
++    label: StoreCard-noMenu;
++
++    font-size: 0.72rem;
++    color: var(--color-ink-soft);
++  `,
++};
+diff --git a/frontend/src/pages/cheap-meals/ui/store-detail/StoreDetail.tsx b/frontend/src/pages/cheap-meals/ui/store-detail/StoreDetail.tsx
+new file mode 100644
+index 0000000..fb7456c
+--- /dev/null
++++ b/frontend/src/pages/cheap-meals/ui/store-detail/StoreDetail.tsx
+@@ -0,0 +1,198 @@
++import { css } from '@emotion/css';
++
++import { formatStoreDistance, type GoodPriceStore } from '@/features/good-price/model/GoodPriceStore';
++import Icon from '@/shared/ui/icon/Icon';
++
++const StoreDetail = ({ store, dataAsOf }: { store: GoodPriceStore; dataAsOf: string | null }) => (
++  <div className={styles.detail}>
++    <p className={styles.meta}>
++      {store.businessType} <span>·</span> 기준 위치에서 직선 {formatStoreDistance(store.distanceMeters)}
++    </p>
++    <p className={styles.address}>
++      <Icon name="locate" size={18} />
++      {store.address}
++    </p>
++    <section className={styles.menuSection} aria-label="메뉴와 서비스 가격">
++      <h3>
++        메뉴·서비스 <span>등록 가격 · 원</span>
++      </h3>
++      {store.menus.length === 0 ? (
++        <p>등록된 메뉴·가격 정보가 없어요.</p>
++      ) : (
++        <dl>
++          {store.menus.map((menu, index) => (
++            <div key={`${index}-${menu.name}`}>
++              <dt>{menu.name}</dt>
++              <dd>{menu.price ?? '가격 정보 없음'}</dd>
++            </div>
++          ))}
++        </dl>
++      )}
++    </section>
++    <aside className={styles.note}>
++      <strong>방문 전에 한 번 확인해 주세요</strong>
++      <p>
++        행정안전부 착한가격업소 현황{dataAsOf === null ? '' : ` · ${dataAsOf} 기준`}입니다. 현재 가격·영업 여부와 다를
++        수 있어요.
++      </p>
++    </aside>
++    <div className={styles.actions}>
++      {store.phone !== null ? (
++        <a className={styles.phone} href={`tel:${store.phone.replace(/[^+\d]/g, '')}`}>
++          전화하기
++        </a>
++      ) : (
++        <span className={styles.noPhone}>등록된 전화번호가 없어요</span>
++      )}
++      <a
++        className={styles.mapLink}
++        href={`https://map.kakao.com/link/to/${encodeURIComponent(store.name)},${store.latitude},${store.longitude}`}
++        target="_blank"
++        rel="noreferrer"
++      >
++        길찾기 <Icon name="external-link" size={16} />
++      </a>
++    </div>
++    {store.phone !== null && <p className={styles.phoneNumber}>{store.phone}</p>}
++  </div>
++);
++
++export default StoreDetail;
++
++const styles = {
++  detail: css`
++    label: StoreDetail-detail;
++
++    display: grid;
++    gap: 1.25rem;
++  `,
++  meta: css`
++    label: StoreDetail-meta;
++
++    display: flex;
++    flex-wrap: wrap;
++    gap: 0.4rem;
++    margin: 0;
++    font-size: 0.78rem;
++    color: var(--color-ink-soft);
++  `,
++  address: css`
++    label: StoreDetail-address;
++
++    display: flex;
++    align-items: flex-start;
++    gap: 0.5rem;
++    margin: 0;
++    font-size: 0.86rem;
++    line-height: 1.6;
++
++    & svg {
++      flex-shrink: 0;
++      margin-top: 0.15rem;
++    }
++  `,
++  menuSection: css`
++    label: StoreDetail-menuSection;
++
++    padding: 1rem;
++    border-radius: var(--radius-md);
++    background: var(--color-surface-muted);
++
++    & h3 {
++      display: flex;
++      justify-content: space-between;
++      margin: 0 0 1rem;
++      font-size: 0.9rem;
++    }
++    & h3 span {
++      font-size: 0.7rem;
++      font-weight: 400;
++      color: var(--color-ink-soft);
++    }
++    & dl {
++      display: grid;
++      gap: 1rem;
++      margin: 0;
++    }
++    & dl div {
++      display: flex;
++      justify-content: space-between;
++      align-items: baseline;
++      gap: 1rem;
++      font-size: 0.86rem;
++      line-height: 1.6;
++    }
++    & dt {
++      flex: 1;
++      overflow-wrap: anywhere;
++    }
++    & dd {
++      max-width: 58%;
++      margin: 0;
++      font-weight: 700;
++      text-align: right;
++      overflow-wrap: anywhere;
++    }
++  `,
++  note: css`
++    label: StoreDetail-note;
++
++    padding: 1rem;
++    border: 1px solid var(--color-border);
++    border-radius: var(--radius-md);
++    font-size: 0.78rem;
++    line-height: 1.7;
++
++    & p {
++      margin: 0.35rem 0 0;
++      color: var(--color-ink-soft);
++    }
++  `,
++  actions: css`
++    label: StoreDetail-actions;
++
++    display: flex;
++    align-items: center;
++    gap: 0.7rem;
++
++    & a {
++      display: flex;
++      align-items: center;
++      justify-content: center;
++      gap: 0.5rem;
++      min-height: 3rem;
++      flex: 1;
++      border-radius: var(--radius-md);
++      font-size: 0.9rem;
++      font-weight: 650;
++      text-decoration: none;
++    }
++  `,
++  phone: css`
++    label: StoreDetail-phone;
++
++    color: var(--color-ink);
++    background: var(--color-surface-neutral);
++  `,
++  mapLink: css`
++    label: StoreDetail-mapLink;
++
++    background: var(--color-action);
++    color: var(--color-on-action);
++  `,
++  noPhone: css`
++    label: StoreDetail-noPhone;
++
++    flex: 1;
++    font-size: 0.7rem;
++    color: var(--color-ink-soft);
++  `,
++  phoneNumber: css`
++    label: StoreDetail-phoneNumber;
++
++    margin: -0.6rem 0 0;
++    color: var(--color-ink-soft);
++    font-size: 0.75rem;
++    text-align: center;
++  `,
++};
+diff --git a/frontend/src/pages/cheap-meals/ui/store-pin.svg b/frontend/src/pages/cheap-meals/ui/store-pin.svg
+new file mode 100644
+index 0000000..bf73e8d
+--- /dev/null
++++ b/frontend/src/pages/cheap-meals/ui/store-pin.svg
+@@ -0,0 +1 @@
++<svg xmlns="http://www.w3.org/2000/svg" width="42" height="48" viewBox="0 0 42 48"><path d="M21 46 10 33a18 18 0 1 1 22 0Z" fill="#f5b91e" stroke="white" stroke-width="3"/><g fill="none" stroke="#212124" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 17h20l-2-7H13l-2 7Zm2 3v11h16V20M18 31v-8h6v8M17 10l-1 7m9-7 1 7"/><path d="M11 17v2a2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0v-2"/></g></svg>
+diff --git a/frontend/src/pages/design-home/desktop/HomeDesktopPage.tsx b/frontend/src/pages/design-home/desktop/HomeDesktopPage.tsx
+index 0d01aff..cedcbef 100644
+--- a/frontend/src/pages/design-home/desktop/HomeDesktopPage.tsx
++++ b/frontend/src/pages/design-home/desktop/HomeDesktopPage.tsx
+@@ -2,6 +2,7 @@ import { css } from '@emotion/css';
+ 
+ import DesktopHeader from '@/shared/ui/desktop-header/DesktopHeader';
+ 
++import CheapMealCard from '../ui/CheapMealCard';
+ import GuideCard from '../ui/GuideCard';
+ import HomeFeatures from '../ui/HomeFeatures';
+ import HomeFooter from '../ui/HomeFooter';
+@@ -16,6 +17,7 @@ const HomeDesktopPage = () => (
+     <DesktopHeader />
+     <div className={styles.layout}>
+       <GuideCard className={styles.guide} />
++      <CheapMealCard className={styles.meals} />
+       <HomeFeatures className={styles.features} />
+       <div className={styles.side}>
+         <QuickMenu />
+@@ -28,6 +30,12 @@ const HomeDesktopPage = () => (
+ );
+ 
+ const styles = {
++  meals: css`
++    label: HomeDesktopPage-meals;
++    grid-area: meals;
++    width: min(100%, 40rem);
++    justify-self: center;
++  `,
+   /*
+    * 데스크탑 홈: 공용 헤더 아래 본문을 64rem 안에 두고, 사용방법 카드는 두 열에 걸쳐 본문 가운데에,
+    * 그 아래 왼쪽에 기능 카드, 오른쪽 19rem 열에 빠른 메뉴와 최근 기록을 둔다.
+@@ -37,6 +45,7 @@ const styles = {
+     display: grid;
+     grid-template-areas:
+       'guide guide'
++      'meals meals'
+       'features side';
+     grid-template-columns: minmax(0, 1fr) 19rem;
+     align-items: start;
+diff --git a/frontend/src/pages/design-home/mobile/HomeMobilePage.tsx b/frontend/src/pages/design-home/mobile/HomeMobilePage.tsx
+index b8d96ba..1aadb98 100644
+--- a/frontend/src/pages/design-home/mobile/HomeMobilePage.tsx
++++ b/frontend/src/pages/design-home/mobile/HomeMobilePage.tsx
+@@ -1,5 +1,6 @@
+ import { css } from '@emotion/css';
+ 
++import CheapMealCard from '../ui/CheapMealCard';
+ import GuideCard from '../ui/GuideCard';
+ import HomeFeatures from '../ui/HomeFeatures';
+ import HomeFooter from '../ui/HomeFooter';
+@@ -15,6 +16,7 @@ const HomeMobilePage = () => (
+     <HomeHeader className={styles.topBar} />
+     <div className={styles.container}>
+       <GuideCard className={styles.guide} />
++      <CheapMealCard />
+       <HomeFeatures />
+     </div>
+     <div className={styles.side}>
+diff --git a/frontend/src/pages/design-home/ui/CheapMealCard.tsx b/frontend/src/pages/design-home/ui/CheapMealCard.tsx
+new file mode 100644
+index 0000000..4b4dbf8
+--- /dev/null
++++ b/frontend/src/pages/design-home/ui/CheapMealCard.tsx
+@@ -0,0 +1,65 @@
++import { css } from '@emotion/css';
++import { Link } from 'react-router-dom';
++
++import Icon from '@/shared/ui/icon/Icon';
++
++const CheapMealCard = ({ className = '' }: { className?: string }) => (
++  <Link
++    to="/cheap-meals"
++    className={`${styles.card} ${className}`}
++    aria-label="오늘 한 끼, 저렴하게 — 저렴한 한 끼 찾기"
++  >
++    <span className={styles.eyebrow}>자취 중이라면?</span>
++    <strong>오늘 한 끼, 저렴하게</strong>
++    <span className={styles.description}>식당부터 편의점·배달 할인까지</span>
++    <span className={styles.action}>
++      저렴한 한 끼 찾기 <Icon name="arrow-right" size={18} />
++    </span>
++  </Link>
++);
++const styles = {
++  card: css`
++    label: CheapMealCard-card;
++    display: flex;
++    flex-direction: column;
++    align-items: flex-start;
++    gap: 0.45rem;
++    margin-top: 1.2rem;
++    padding: 1.35rem;
++    border-radius: var(--radius-card);
++    color: var(--color-ink);
++    text-decoration: none;
++    background: color-mix(in srgb, var(--color-brand-yellow) 22%, white);
++    border: 1px solid color-mix(in srgb, var(--color-brand-yellow) 35%, white);
++    & strong {
++      font-size: 1.45rem;
++      letter-spacing: -0.045em;
++      line-height: 1.35;
++    }
++    &:hover {
++      background: color-mix(in srgb, var(--color-brand-yellow) 30%, white);
++    }
++  `,
++  eyebrow: css`
++    label: CheapMealCard-eyebrow;
++    font-size: 0.75rem;
++    color: var(--color-ink-soft);
++    font-weight: 600;
++  `,
++  description: css`
++    label: CheapMealCard-description;
++    font-size: 0.82rem;
++    color: var(--color-ink-soft);
++  `,
++  action: css`
++    label: CheapMealCard-action;
++    display: inline-flex;
++    align-items: center;
++    gap: 0.6rem;
++    font-size: 0.85rem;
++    font-weight: 750;
++    margin-top: 0.6rem;
++    min-height: 30px;
++  `,
++};
++export default CheapMealCard;
+diff --git a/frontend/test/features/good-price/api/goodPriceApi.test.ts b/frontend/test/features/good-price/api/goodPriceApi.test.ts
+new file mode 100644
+index 0000000..4298a52
+--- /dev/null
++++ b/frontend/test/features/good-price/api/goodPriceApi.test.ts
+@@ -0,0 +1,50 @@
++import { describe, expect, it } from 'vitest';
++
++import { parseGoodPriceResult } from '@/features/good-price/api/goodPriceApi';
++
++const response = {
++  center: { latitude: 37.5665, longitude: 126.978 },
++  radius: 1000,
++  count: 1,
++  dataAsOf: '2026-06-30',
++  stores: [
++    {
++      id: 1,
++      name: '계약 검증 업소',
++      businessType: '기타',
++      phone: null,
++      address: '테스트 주소',
++      latitude: 37.5665,
++      longitude: 126.978,
++      distanceMeters: 0,
++      menus: [
++        { name: '범위', price: '25000~45000' },
++        { name: '무료', price: '무료' },
++        { name: '미등록', price: null },
++      ],
++    },
++  ],
++};
++
++describe('착한가격업소 응답 계약', () => {
++  it('가격 원문과 누락 값을 변경하지 않는다', () => {
++    expect(parseGoodPriceResult(response)).toEqual(response);
++  });
++  it('진짜 빈 결과와 null 기준일을 유지한다', () => {
++    const empty = { ...response, count: 0, stores: [], dataAsOf: null };
++    expect(parseGoodPriceResult(empty)).toEqual(empty);
++  });
++  it('지원하지 않는 반경과 목록 개수 불일치는 오류다', () => {
++    expect(() => parseGoodPriceResult({ ...response, radius: 750 })).toThrow();
++    expect(() => parseGoodPriceResult({ ...response, count: 0 })).toThrow();
++  });
++  it('가격 숫자나 유효하지 않은 좌표를 임의 보정하지 않는다', () => {
++    expect(() => parseGoodPriceResult({ ...response, stores: [{ ...response.stores[0], latitude: NaN }] })).toThrow();
++    expect(() =>
++      parseGoodPriceResult({
++        ...response,
++        stores: [{ ...response.stores[0], menus: [{ name: '가격', price: 5000 }] }],
++      }),
++    ).toThrow();
++  });
++});
+diff --git a/frontend/test/features/map/lib/naverMapEngine.test.ts b/frontend/test/features/map/lib/naverMapEngine.test.ts
+index 53ce521..13e3949 100644
+--- a/frontend/test/features/map/lib/naverMapEngine.test.ts
++++ b/frontend/test/features/map/lib/naverMapEngine.test.ts
+@@ -65,3 +65,8 @@ it('SDK 로딩 주소에는 GL 서브모듈이 포함된다', async () => {
+   window.jachwiNaverSdkReady?.();
+   await loading;
+ });
++
++it('ready 이후 인증 실패가 도착하면 다음 지도 로드를 거절한다', async () => {
++  window.navermap_authFailure?.();
++  await expect(naverEngine('test').load()).rejects.toThrow('인증에 실패');
++});
+diff --git a/frontend/test/features/map/ui/map-canvas/MapCanvas.test.tsx b/frontend/test/features/map/ui/map-canvas/MapCanvas.test.tsx
+index c914309..9ee2837 100644
+--- a/frontend/test/features/map/ui/map-canvas/MapCanvas.test.tsx
++++ b/frontend/test/features/map/ui/map-canvas/MapCanvas.test.tsx
+@@ -2,6 +2,7 @@ import { act, render, waitFor } from '@testing-library/react';
+ import type { ReactElement } from 'react';
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+ 
++import { NAVER_AUTH_FAILURE_EVENT } from '@/features/map/lib/naverMapEngine';
+ import type { MapRegion } from '@/features/map/model/MapCanvas';
+ import MapCanvas from '@/features/map/ui/map-canvas/MapCanvas';
+ import { PublicConfigProvider } from '@/shared/config/PublicConfigContext';
+@@ -556,4 +557,22 @@ describe('Naver 지도 상태 동기화', () => {
+     expect(first).not.toHaveBeenCalled();
+     expect(maps).toHaveLength(1);
+   });
++
++  it('SDK가 인증 실패 후 객체를 폐기해도 지도 오류만 표시하고 좌표 갱신과 화면 이탈은 안전하다', async () => {
++    const onRetry = vi.fn();
++    const { rerender, unmount, getByText, queryByText } = renderWithConfig(
++      <MapCanvas center={{ latitude: 37.5, longitude: 127 }} level={5} onRetry={onRetry} />,
++    );
++    await waitFor(() => expect(maps.length).toBeGreaterThan(0));
++    act(() => {
++      Object.defineProperty(window, 'naver', { configurable: true, value: { maps: null } });
++      window.dispatchEvent(new Event(NAVER_AUTH_FAILURE_EVENT));
++    });
++    expect(getByText('지도를 연결할 수 없어요.')).toBeInTheDocument();
++    expect(queryByText('DEMO MAP')).not.toBeInTheDocument();
++    act(() => getByText('지도 다시 시도').click());
++    expect(onRetry).toHaveBeenCalledOnce();
++    expect(() => rerender(<MapCanvas center={{ latitude: 37.6, longitude: 127.1 }} level={7} />)).not.toThrow();
++    expect(() => unmount()).not.toThrow();
++  });
+ });
+diff --git a/frontend/test/features/meal-deals/api/mealDealsApi.test.ts b/frontend/test/features/meal-deals/api/mealDealsApi.test.ts
+new file mode 100644
+index 0000000..db07ce4
+--- /dev/null
++++ b/frontend/test/features/meal-deals/api/mealDealsApi.test.ts
+@@ -0,0 +1,60 @@
++// @vitest-environment node
++import { describe, expect, it } from 'vitest';
++
++import { parseDeliveryOffers, parsePromotionResult } from '@/features/meal-deals/api/mealDealsApi';
++import { formatKst, httpsUrl } from '@/features/meal-deals/lib/presentation';
++
++const product = { name: '도시락', price: 4200, imageUrl: '', category: 'UNKNOWN', promotionType: 'ONE_PLUS_ONE' };
++const promotion = {
++  brand: 'SEVEN_ELEVEN',
++  count: 1,
++  collectedAt: null,
++  sourceUrl: 'https://www.7-eleven.co.kr/product/presentList.asp',
++  products: [product],
++};
++const offer = {
++  id: 1,
++  platform: 'BAEMIN',
++  brandName: '피자',
++  discountAmount: 6000,
++  minOrderAmount: null,
++  startDate: null,
++  endDate: null,
++  conditions: null,
++  lastVerifiedAt: '2026-10-29T09:00:00',
++};
++
++describe('행사 API 계약', () => {
++  it('UNKNOWN 카테고리와 미수집 null을 보존하고 판매가격을 나누지 않는다', () => {
++    expect(parsePromotionResult(promotion)).toEqual(promotion);
++    expect(parsePromotionResult({ ...promotion, count: 0, products: [] }).collectedAt).toBeNull();
++  });
++  it.each(['ONE_PLUS_ONE', 'TWO_PLUS_ONE', 'THREE_PLUS_ONE', 'SALE', 'PICK_AND_MIX'])(
++    '%s 행사를 누락하지 않는다',
++    (promotionType) => {
++      expect(
++        parsePromotionResult({ ...promotion, products: [{ ...product, promotionType }] }).products[0].promotionType,
++      ).toBe(promotionType);
++    },
++  );
++  it('개수·enum·음수 가격·누락 필드가 잘못되면 응답 오류로 구분한다', () => {
++    expect(() => parsePromotionResult({ ...promotion, count: 2 })).toThrow();
++    expect(() => parsePromotionResult({ ...promotion, brand: 'INVALID' })).toThrow();
++    expect(() => parsePromotionResult({ ...promotion, products: [{ ...product, price: -1 }] })).toThrow();
++    expect(() => parsePromotionResult({ ...promotion, collectedAt: undefined })).toThrow();
++  });
++  it('배달 nullable 조건과 0원 최소 주문금액을 구별한다', () => {
++    expect(parseDeliveryOffers([offer])).toEqual([offer]);
++    expect(parseDeliveryOffers([{ ...offer, minOrderAmount: 0 }])[0].minOrderAmount).toBe(0);
++    expect(parseDeliveryOffers([])).toEqual([]);
++    expect(() => parseDeliveryOffers({ offers: [] })).toThrow();
++    expect(() => parseDeliveryOffers([{ ...offer, discountAmount: '6000' }])).toThrow();
++    expect(() => parseDeliveryOffers([{ ...offer, platform: 'INVALID' }])).toThrow();
++  });
++  it('한국 시간의 오프셋 유무를 모두 처리하고 안전한 HTTPS 링크만 쓴다', () => {
++    expect(formatKst('2026-10-29T09:00:00')).toBe(formatKst('2026-10-29T09:00:00+09:00'));
++    expect(httpsUrl('javascript:alert(1)')).toBeUndefined();
++    expect(httpsUrl('https://user:pass@example.com')).toBeUndefined();
++    expect(httpsUrl('https://example.com/a')).toBe('https://example.com/a');
++  });
++});
+diff --git a/frontend/test/pages/cheap-meals/CheapMealsPage.test.tsx b/frontend/test/pages/cheap-meals/CheapMealsPage.test.tsx
+new file mode 100644
+index 0000000..01056e3
+--- /dev/null
++++ b/frontend/test/pages/cheap-meals/CheapMealsPage.test.tsx
+@@ -0,0 +1,290 @@
++import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
++import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
++import userEvent from '@testing-library/user-event';
++import { http, HttpResponse } from 'msw';
++import { MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom';
++import { beforeEach, expect, it, vi } from 'vitest';
++
++import CheapMealsPage from '@/pages/cheap-meals/CheapMealsPage';
++import CheapMealCard from '@/pages/design-home/ui/CheapMealCard';
++import { setAuthentication } from '@/features/auth/model/authStore';
++import * as mapLocation from '@/features/map/lib/mapLocation';
++import { PublicConfigProvider } from '@/shared/config/PublicConfigContext';
++
++import { server } from '../../server';
++
++vi.mock('@/features/map/ui/map-canvas/MapCanvas', () => ({
++  default: ({ onCenterChange }: { onCenterChange: (lat: number, lng: number) => void }) => (
++    <button onClick={() => onCenterChange(37.5665, 126.978)}>지도 이동 테스트</button>
++  ),
++}));
++const calls = { promotions: vi.fn(), delivery: vi.fn(), stores: vi.fn() };
++const products = Array.from({ length: 60 }, (_, index) => ({
++  name: `행사상품 ${index}`,
++  price: 4200,
++  imageUrl: 'https://example.com/product.png',
++  category: 'UNKNOWN',
++  promotionType: ['ONE_PLUS_ONE', 'TWO_PLUS_ONE', 'THREE_PLUS_ONE', 'SALE', 'PICK_AND_MIX'][index % 5],
++}));
++const promotion = (brand: string, values = products, collectedAt: string | null = '2026-10-29T04:00:00+09:00') => ({
++  brand,
++  count: values.length,
++  collectedAt,
++  sourceUrl: 'https://example.com/promotions',
++  products: values,
++});
++const offer = {
++  id: 1,
++  platform: 'BAEMIN',
++  brandName: '테스트피자',
++  discountAmount: 6000,
++  minOrderAmount: 22000,
++  startDate: null,
++  endDate: null,
++  conditions: null,
++  lastVerifiedAt: '2026-10-29T09:00:00',
++};
++const success = (data: unknown) => HttpResponse.json({ code: 'SUCCESS', message: '성공', data });
++
++beforeEach(() => {
++  Object.values(calls).forEach((call) => call.mockClear());
++  setAuthentication({ accessToken: 'test-token', tokenType: 'Bearer', expiresIn: 60 });
++  server.use(
++    http.get('http://localhost:8080/api/promotions', ({ request }) => {
++      const brand = new URL(request.url).searchParams.get('brand') ?? '';
++      calls.promotions(brand);
++      return success(promotion(brand));
++    }),
++    http.get('http://localhost:8080/api/delivery-discount-offers', () => {
++      calls.delivery();
++      return success([
++        offer,
++        {
++          ...offer,
++          id: 2,
++          platform: 'COUPANG_EATS',
++          brandName: '테스트치킨',
++          minOrderAmount: null,
++          conditions: '참여 매장에 한함',
++        },
++      ]);
++    }),
++    http.get('http://localhost:8080/api/maps/good-price-stores', ({ request }) => {
++      const url = new URL(request.url);
++      calls.stores(url.searchParams.get('radius'));
++      return success({
++        center: {
++          latitude: Number(url.searchParams.get('latitude')),
++          longitude: Number(url.searchParams.get('longitude')),
++        },
++        radius: Number(url.searchParams.get('radius')),
++        count: 1,
++        dataAsOf: '2026-06-30',
++        stores: [
++          {
++            id: 10,
++            name: '착한 세탁소',
++            businessType: '기타비요식업',
++            phone: null,
++            address: '테스트 주소',
++            latitude: 37.3948,
++            longitude: 127.1119,
++            distanceMeters: 100,
++            menus: [{ name: '세탁', price: '5,000~7,000' }],
++          },
++        ],
++      });
++    }),
++  );
++});
++const Back = () => {
++  const navigate = useNavigate();
++  return <button onClick={() => navigate(-1)}>브라우저 뒤로</button>;
++};
++const setup = (entry = '/cheap-meals') => {
++  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
++  render(
++    <QueryClientProvider client={client}>
++      <PublicConfigProvider config={{ apiBaseUrl: 'http://localhost:8080' }}>
++        <MemoryRouter initialEntries={[entry]}>
++          <Back />
++          <Routes>
++            <Route path="/" element={<CheapMealCard />} />
++            <Route path="/cheap-meals" element={<CheapMealsPage />} />
++          </Routes>
++        </MemoryRouter>
++      </PublicConfigProvider>
++    </QueryClientProvider>,
++  );
++  return userEvent.setup();
++};
++const tab = (name: string) => screen.getByRole('tab', { name });
++
++it('홈 카드에서 전체로 진입하고 세 선택 카드만 보여주며 카테고리 API를 미리 호출하지 않는다', async () => {
++  const user = setup('/');
++  await user.click(screen.getByRole('link', { name: /오늘 한 끼/ }));
++  expect(tab('전체')).toHaveAttribute('aria-selected', 'true');
++  expect(screen.getByRole('heading', { name: '오늘은 어떻게 아껴볼까요?' })).toBeInTheDocument();
++  expect(screen.getByRole('button', { name: /주변 착한가격 식당/ })).toBeInTheDocument();
++  expect(screen.getByRole('button', { name: /편의점 할인/ })).toBeInTheDocument();
++  expect(screen.getByRole('button', { name: /배달 할인/ })).toBeInTheDocument();
++  expect(calls.promotions).not.toHaveBeenCalled();
++  expect(calls.delivery).not.toHaveBeenCalled();
++  expect(calls.stores).not.toHaveBeenCalled();
++});
++it('상품은 24개씩 표시하고 추가 행사 유형과 UNKNOWN 상품도 전체 목록에 남는다', async () => {
++  const user = setup('/cheap-meals?tab=convenience');
++  const list = await screen.findByRole('list', { name: '행사상품 목록' });
++  expect(within(list).getAllByRole('listitem')).toHaveLength(24);
++  await user.click(screen.getByRole('button', { name: /상품 더 보기/ }));
++  expect(within(list).getAllByRole('listitem')).toHaveLength(48);
++  await user.click(screen.getByRole('button', { name: '기타 행사' }));
++  expect(within(list).getAllByRole('listitem')).toHaveLength(24);
++  expect(within(list).getAllByText('3+1')).toHaveLength(12);
++  expect(within(list).getAllByText('골라담기')).toHaveLength(12);
++});
++it('브랜드·1+1 필터·배달 플랫폼이 탭을 오가도 유지된다', async () => {
++  const user = setup();
++  await user.click(tab('편의점'));
++  await screen.findByRole('list', { name: '행사상품 목록' });
++  await user.click(screen.getByRole('radio', { name: '세븐일레븐' }));
++  await waitFor(() => expect(calls.promotions).toHaveBeenCalledWith('SEVEN_ELEVEN'));
++  await screen.findByRole('list', { name: '행사상품 목록' });
++  await user.click(screen.getByRole('button', { name: '1+1' }));
++  await user.click(tab('배달'));
++  await screen.findByRole('list', { name: '배달 혜택 목록' });
++  await user.click(screen.getByRole('radio', { name: '배민' }));
++  expect(screen.queryByRole('button', { name: /테스트치킨 할인 상세/ })).not.toBeInTheDocument();
++  await user.click(tab('편의점'));
++  expect(screen.getByRole('radio', { name: '세븐일레븐' })).toHaveAttribute('aria-checked', 'true');
++  expect(screen.getByRole('button', { name: '1+1' })).toHaveAttribute('aria-pressed', 'true');
++  await user.click(tab('배달'));
++  expect(screen.getByRole('radio', { name: '배민' })).toHaveAttribute('aria-checked', 'true');
++});
++it('이미지 실패를 대체하고 상세에서 실제 판매가격·UNKNOWN·공식 링크를 표시한다', async () => {
++  const user = setup('/cheap-meals?tab=convenience');
++  const image = await screen.findByRole('img', { name: '행사상품 0' });
++  fireEvent.error(image);
++  expect(screen.getByRole('img', { name: '행사상품 0 이미지 없음' })).toBeInTheDocument();
++  await user.click(screen.getByRole('button', { name: '행사상품 0 상세 보기' }));
++  const sheet = within(screen.getByRole('dialog', { name: '상품 상세' }));
++  expect(sheet.getByText('4,200원')).toBeInTheDocument();
++  expect(sheet.queryByText('2,100원')).not.toBeInTheDocument();
++  expect(sheet.getByText('카테고리 정보 없음')).toBeInTheDocument();
++  expect(sheet.getByRole('link', { name: /공식 행사/ })).toHaveAttribute('href', 'https://example.com/promotions');
++  expect(document.body.style.overflow).toBe('hidden');
++  await user.click(screen.getByRole('button', { name: '브라우저 뒤로' }));
++  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
++  expect(tab('편의점')).toHaveAttribute('aria-selected', 'true');
++  expect(document.body.style.overflow).toBe('');
++});
++it('배달 상세는 금액과 null 조건을 보여주고 주문 링크를 만들지 않는다', async () => {
++  const user = setup('/cheap-meals?tab=delivery');
++  await user.click(await screen.findByRole('button', { name: /배민 테스트피자 할인 상세/ }));
++  const sheet = within(screen.getByRole('dialog', { name: '할인 상세' }));
++  expect(sheet.getByText('6,000원 할인')).toBeInTheDocument();
++  expect(sheet.getByText('22,000원')).toBeInTheDocument();
++  expect(sheet.getAllByText('정보 없음')).toHaveLength(3);
++  expect(sheet.queryByRole('link')).not.toBeInTheDocument();
++  await user.click(sheet.getByRole('button', { name: '상세 닫기' }));
++  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
++});
++it('미수집 0건을 서버 오류와 구분한다', async () => {
++  server.use(http.get('http://localhost:8080/api/promotions', () => success(promotion('EMART24', [], null))));
++  setup('/cheap-meals?tab=convenience');
++  expect(await screen.findByText('아직 행사정보를 수집하지 않았어요')).toBeInTheDocument();
++  expect(screen.queryByRole('button', { name: '다시 시도' })).not.toBeInTheDocument();
++});
++it('현재 유효한 배달 혜택 0건을 그대로 표시한다', async () => {
++  server.use(http.get('http://localhost:8080/api/delivery-discount-offers', () => success([])));
++  setup('/cheap-meals?tab=delivery');
++  expect(await screen.findByText('현재 유효한 할인정보가 없어요.')).toBeInTheDocument();
++});
++it('서버 실패 후 다시 시도하면 실제 응답 목록으로 복구한다', async () => {
++  let failed = true;
++  server.use(
++    http.get('http://localhost:8080/api/promotions', () =>
++      failed ? new HttpResponse(null, { status: 500 }) : success(promotion('EMART24')),
++    ),
++  );
++  const user = setup('/cheap-meals?tab=convenience');
++  const retry = await screen.findByRole('button', { name: '다시 시도' });
++  failed = false;
++  await user.click(retry);
++  expect(await screen.findByRole('list', { name: '행사상품 목록' })).toBeInTheDocument();
++});
++it('식당의 원본 업종과 반경을 유지하고 지도 이동 후 재검색한다', async () => {
++  const user = setup('/cheap-meals?tab=restaurant');
++  expect(await screen.findByText('기타비요식업')).toBeInTheDocument();
++  await user.click(screen.getByRole('button', { name: '500m' }));
++  await waitFor(() => expect(calls.stores).toHaveBeenCalledWith('500'));
++  await user.click(tab('전체'));
++  await user.click(tab('식당'));
++  expect(screen.getByRole('button', { name: '500m' })).toHaveAttribute('aria-pressed', 'true');
++  await user.click(screen.getByRole('button', { name: '지도 이동 테스트' }));
++  await user.click(screen.getByRole('button', { name: '이 위치에서 찾기' }));
++  expect(screen.getByText('지도에서 선택한 위치')).toBeInTheDocument();
++  await user.click(await screen.findByRole('button', { name: '착한 세탁소 상세 보기' }));
++  expect(screen.getByRole('link', { name: /길찾기/ })).toHaveAttribute(
++    'href',
++    expect.stringContaining('map.kakao.com/link/to/'),
++  );
++  await user.click(screen.getByRole('button', { name: '브라우저 뒤로' }));
++  expect(screen.getByRole('list', { name: '가게 목록' })).toBeInTheDocument();
++});
++it('카테고리 탭을 키보드로 전환할 수 있다', async () => {
++  const user = setup();
++  tab('전체').focus();
++  await user.keyboard('{End}');
++  expect(tab('배달')).toHaveAttribute('aria-selected', 'true');
++  expect(tab('배달')).toHaveFocus();
++});
++
++it('응답을 기다리는 동안 로딩을 보여주고 빈 필터 결과를 미수집과 구분한다', async () => {
++  let complete!: () => void;
++  const pending = new Promise<void>((resolve) => {
++    complete = resolve;
++  });
++  server.use(
++    http.get('http://localhost:8080/api/promotions', async () => {
++      await pending;
++      return success(promotion('EMART24', [products[0]]));
++    }),
++  );
++  const user = setup('/cheap-meals?tab=convenience');
++  expect(await screen.findByText('행사상품을 불러오고 있어요')).toBeInTheDocument();
++  complete();
++  await screen.findByRole('list', { name: '행사상품 목록' });
++  await user.click(screen.getByRole('button', { name: '할인' }));
++  expect(screen.getByText('이 행사 유형의 상품이 없어요')).toBeInTheDocument();
++  expect(screen.queryByText('아직 행사정보를 수집하지 않았어요')).not.toBeInTheDocument();
++});
++it('Escape는 상세만 한 번 닫고 기존 카테고리와 초점을 보존한다', async () => {
++  const user = setup('/');
++  await user.click(screen.getByRole('link', { name: /오늘 한 끼/ }));
++  await user.click(tab('배달'));
++  const card = await screen.findByRole('button', { name: /배민 테스트피자 할인 상세/ });
++  await user.click(card);
++  await user.keyboard('{Escape}');
++  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
++  expect(tab('배달')).toHaveAttribute('aria-selected', 'true');
++  expect(card).toHaveFocus();
++});
++
++it('위치 확인 중 다른 탭으로 떠났다가 돌아와도 위치 버튼을 다시 쓸 수 있다', async () => {
++  const locate = vi.spyOn(mapLocation, 'requestCurrentMapLocation').mockImplementation(() => new Promise(() => {}));
++  try {
++    const user = setup('/cheap-meals?tab=restaurant');
++    await screen.findByText('기타비요식업');
++    expect(locate).not.toHaveBeenCalled();
++    await user.click(screen.getByRole('button', { name: '현재 위치로 찾기' }));
++    expect(screen.getByRole('button', { name: '현재 위치로 찾기' })).toBeDisabled();
++    await user.click(tab('전체'));
++    await user.click(tab('식당'));
++    expect(screen.getByRole('button', { name: '현재 위치로 찾기' })).toBeEnabled();
++    await user.click(screen.getByRole('button', { name: '현재 위치로 찾기' }));
++    expect(locate).toHaveBeenCalledTimes(2);
++  } finally {
++    locate.mockRestore();
++  }
++});

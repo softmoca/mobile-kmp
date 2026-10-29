@@ -35,3 +35,22 @@
 - 격리 빌드에서 사용하지 않는 기존 KMP framework 검색 경로 경고가 남지만 WebView 앱과 테스트 코드 컴파일·링크는 성공했다.
 
 앞으로도 작업 단위마다 변경 내용, 실제 검증 결과, 미검증 항목과 관련 문서를 이 파일에 추가한다. 검증일과 커밋일이 다르면 구분해서 적는다.
+
+## 2026-10-29 — 저렴한 한 끼 찾기 구현·검증
+
+- 개인 `codex/cheap-meals`, 기존 독립 React clone `codex/mobile-cheap-meals`에서 최신 develop `021267b` 기반으로 구현했다. 이전 변경은 `1855200`과 기존 패치에 보존했다.
+- 홈 카드, 전체/식당/편의점/배달, 실제 API·필터·점진 표시·상세 시트·탭 상태 보존을 구현했다. 최신 인증/Emotion/라우터를 사용하며 구형 하단 메뉴를 가져오지 않았다.
+- React 전체 100개 파일/680개 테스트 통과. 이후 지도 SDK 처리와 상세 초점·로딩·위치 요청 취소 보완 후 관련 **21개 파일/184개 테스트**가 통과했다. lint/format/typecheck/production build 성공. 초기 추가 회귀 테스트의 로딩 지연 대기와 초점 복원 실패는 수정 후 통과했다.
+- 실제 API 네 조회 200, 미인증 401. 시청 1km 22곳, 이마트24 2,337개, 세븐일레븐 미수집 0개, 배달 108개. Simulator 실제 WKWebView API·화면 테스트 2/2, Android 단위 테스트/APK/lint/KMP Simulator framework 성공.
+- 실제 iPhone 12 mini에서 홈/전체/상품 이미지·상세·스크롤/배달·상세/탭 필터 유지와 수정 반영 확인. 새 Mac IP의 네이버 허용 URL 등록이 남아 지도 타일·마커·드래그는 이번 실기기에서 미검증이다. 업소 API와 목록은 동작한다.
+- 상위 팀 저장소, Xcode Team/Bundle/Info.plist, 기본 실행 URL/Release를 보존했다. 새 작업은 로컬 커밋으로만 보존하고 원격 push/merge/배포하지 않는다.
+- 실행법·증거·남은 확인: [CHEAP_MEALS](CHEAP_MEALS.md), [API 결과](verification/cheap-meals-api-2026-10-29.json).
+
+### 이번 작업의 로컬 커밋과 마감 상태
+
+- React `eee8af8`: 네이버 지도 SDK 인증 실패·객체 정리·오류 표시·재시도 연결을 보존했다.
+- React `c4fb83c`: 홈 진입, 네 카테고리, 실제 API·UI·테스트·설명 문서를 보존했다.
+- 개인 저장소 커밋 제목: `feat: 저렴한 한 끼 Preview와 iPhone 검증 기록을 보존한다`. 패치·실행 스크립트·API 검사·XCTest·증거를 함께 저장한다.
+- 마지막 지도 재시도 수정 뒤 페이지 13개 테스트와 typecheck/production build가 재통과했다. 패치는 고정 develop에 적용되며 변경된 35개 파일이 현재 소스와 일치했다.
+- Mac이 잠겨 최종 추가 UI 확인은 중단됐다. 이미 확인한 실제 iPhone 결과와 지도 URL 등록 대기 항목을 [검증 요약](verification/cheap-meals-results-2026-10-29.json)에 구분했다.
+- 브라우저 375px/1024px 가로 넘침 없음, 상품 24→48개 표시, 탭 왕복 시 스크롤 위치 유지, 실제 서울시청 주소 검색 22곳을 확인했다.

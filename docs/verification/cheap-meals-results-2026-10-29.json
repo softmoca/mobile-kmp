@@ -1,0 +1,84 @@
+{
+  "verifiedDate": "2026-10-29",
+  "timezone": "Asia/Seoul",
+  "frontendBase": "021267b55ac699d02ff0ccbf0a24f7da7fa73e0e",
+  "personalBranch": "codex/cheap-meals",
+  "previewBranch": "codex/mobile-cheap-meals",
+  "previewOrigin": "https://192.168.3.253:3443",
+  "tests": {
+    "fullFrontendBeforeSdkFollowups": {
+      "files": 100,
+      "passed": 680
+    },
+    "finalAffectedSuite": {
+      "files": 21,
+      "passed": 184
+    },
+    "afterMapRetryChange": {
+      "files": 1,
+      "passed": 13
+    },
+    "lint": "passed",
+    "format": "passed",
+    "typecheck": "passed",
+    "productionBuild": "passed",
+    "webviewDebugReleasePolicy": "passed",
+    "iosSimulatorLiveApiAndNavigation": {
+      "passed": 2,
+      "failed": 0
+    },
+    "androidUnitApkLintAndKmpIosFramework": "passed"
+  },
+  "physicalDevice": {
+    "model": "iPhone 12 mini",
+    "os": "27.0.1",
+    "verified": [
+      "home card",
+      "all category",
+      "actual product images and 2337 products",
+      "product detail and scroll and close",
+      "seven uncollected empty state",
+      "actual delivery cards and detail",
+      "Coupang 37 offers",
+      "category filter preservation",
+      "Pangyo radius 500/1000/2000 yields 1/2/6 stores",
+      "store detail opens",
+      "web changes reflected without native reinstall"
+    ],
+    "notVerified": [
+      "Naver tiles and markers and map dragging on new IP",
+      "GPS and permission denial/regrant",
+      "phone call",
+      "large text and landscape",
+      "iOS 16"
+    ]
+  },
+  "browser": {
+    "mobileWidth": 375,
+    "documentWidth": 375,
+    "desktopWidth": 1024,
+    "desktopDocumentWidth": 1024,
+    "progressiveProductCount": [
+      24,
+      48
+    ],
+    "scrollTopBeforeAndAfterTabSwitch": [
+      3566,
+      3566
+    ],
+    "cityHallAddressSearchCount": 22
+  },
+  "remaining": [
+    "new IP needs Naver Maps allowed Web service URL registration",
+    "SEVEN_ELEVEN backend returned 0 with collectedAt null",
+    "Mac locked before final additional screen checks"
+  ],
+  "preservation": {
+    "teamRepositoryReadOnly": true,
+    "xcodeProjectMatchesBaseline": true,
+    "infoPlistMatchesBaseline": true,
+    "releaseUnchanged": true,
+    "noPushMergeDeploy": true
+  },
+  "credentialsPersisted": false
+}

@@ -5,6 +5,7 @@
     "preview:prepare": "node scripts/prepare-thrifty-preview.cjs",
     "preview:save": "node scripts/save-thrifty-preview.cjs",
     "dev:preview": "node scripts/thrifty-preview.cjs",
+    "verify:cheap-meals-api": "python3 scripts/verify-cheap-meals-api.py",
     "verify:preview-api": "python3 scripts/verify-thrifty-api.py",
     "dev:web": "node scripts/local-web.cjs",
     "test:webview": "sh scripts/test-webview.sh",

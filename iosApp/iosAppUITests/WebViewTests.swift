@@ -302,4 +302,92 @@ final class WebViewTests: XCTestCase {
         XCTAssertEqual(restoredMember, result?["memberId"] as? Int)
         print("Thrifty Preview authenticated store counts (500/1000/2000m): \(counts)")
     }
+
+    @MainActor
+    func testCheapMealsLiveContract() async throws {
+        guard let origin = ProcessInfo.processInfo.environment["JACHWI_PREVIEW_URL"],
+              let url = URL(string: origin), WebViewConfiguration.isLocalDevelopmentURL(url) else {
+            throw XCTSkip("신뢰된 HTTPS Preview에서만 실제 한 끼 API를 검사합니다.")
+        }
+        let config = WKWebViewConfiguration()
+        config.websiteDataStore = .default()
+        let web = WKWebView(frame: .zero, configuration: config)
+        web.load(URLRequest(url: url))
+        for _ in 0..<200 {
+            if web.url?.host == url.host && !web.isLoading { break }
+            try await Task.sleep(nanoseconds: 200_000_000)
+        }
+        let result = try await web.callAsyncJavaScript("""
+        const login = await fetch('/api/auth/login', {method:'POST', credentials:'include'});
+        if (!login.ok) throw new Error('Login status '+login.status);
+        const first = (await login.json()).data.member.memberId;
+        const refresh = await fetch('/api/auth/refresh', {method:'POST',credentials:'include'});
+        if (!refresh.ok) throw new Error('Refresh status '+refresh.status);
+        const {data: auth} = await refresh.json();
+        const paths = ['/api/maps/good-price-stores?latitude=37.5665&longitude=126.978&radius=1000',
+          '/api/promotions?brand=EMART24','/api/promotions?brand=SEVEN_ELEVEN','/api/delivery-discount-offers'];
+        const counts = [];
+        for (const path of paths) {
+          const response = await fetch(path, {headers:{Authorization:'Bearer '+auth.accessToken}});
+          if (!response.ok) throw new Error('API status '+response.status);
+          const {data} = await response.json();
+          const list = Array.isArray(data) ? data : data.products || data.stores;
+          if (!Array.isArray(list)) throw new Error('List contract mismatch');
+          if (!Array.isArray(data) && data.count!==list.length) throw new Error('Count mismatch');
+          if (data.products && data.products.some(p=>!Number.isInteger(p.price)||typeof p.promotionType!=='string')) throw new Error('Product contract mismatch');
+          if (Array.isArray(data) && data.some(o=>!Number.isInteger(o.discountAmount)||!['BAEMIN','COUPANG_EATS'].includes(o.platform))) throw new Error('Offer contract mismatch');
+          counts.push(list.length);
+        }
+        return {sameMember:first===auth.member.memberId, counts, origin:location.origin,
+          exposesRefresh:document.cookie.includes('refresh_token')};
+        """, arguments: [:], in: nil, contentWorld: .page) as? [String: Any]
+        XCTAssertEqual(result?["sameMember"] as? Bool, true)
+        XCTAssertEqual(result?["exposesRefresh"] as? Bool, false)
+        XCTAssertEqual(result?["origin"] as? String, origin)
+        let counts = try XCTUnwrap(result?["counts"] as? [Int])
+        XCTAssertEqual(counts.count, 4)
+        XCTAssertTrue(counts.allSatisfy { $0 >= 0 })
+        let cookies = await config.websiteDataStore.httpCookieStore.allCookies()
+        let refreshCookie = try XCTUnwrap(cookies.first { $0.name == "refresh_token" && $0.domain == url.host })
+        XCTAssertTrue(refreshCookie.isSecure)
+        XCTAssertTrue(refreshCookie.isHTTPOnly)
+        print("Cheap meals live API counts (stores/emart24/seven/delivery): \(counts)")
+    }
+
+    func testCheapMealsPreviewNavigation() throws {
+        guard let origin = ProcessInfo.processInfo.environment["JACHWI_PREVIEW_URL"] else {
+            throw XCTSkip("HTTPS 한 끼 Preview URL이 필요합니다.")
+        }
+        let app = XCUIApplication()
+        app.launchEnvironment["JACHWI_WEB_URL"] = origin
+        app.launch()
+        let homeCard = app.webViews.links.matching(NSPredicate(format: "label CONTAINS %@", "오늘 한 끼")).firstMatch
+        XCTAssertTrue(homeCard.waitForExistence(timeout: 40))
+        homeCard.tap()
+        let overview = app.webViews.staticTexts["오늘은 어떻게 아껴볼까요?"].firstMatch
+        XCTAssertTrue(overview.waitForExistence(timeout: 25))
+        func tab(_ label: String) -> XCUIElement {
+            app.webViews.descendants(matching: .any).matching(NSPredicate(format: "label == %@", label)).firstMatch
+        }
+        tab("편의점").tap()
+        XCTAssertTrue(app.webViews.staticTexts["편의점 행사상품"].firstMatch.waitForExistence(timeout: 25))
+        let product = app.webViews.buttons.matching(NSPredicate(format: "label CONTAINS %@", "상세 보기")).firstMatch
+        XCTAssertTrue(product.waitForExistence(timeout: 25))
+        product.tap()
+        XCTAssertTrue(app.webViews.staticTexts["상품 상세"].firstMatch.waitForExistence(timeout: 10))
+        app.webViews.buttons["상세 닫기"].firstMatch.tap()
+        tab("배달").tap()
+        XCTAssertTrue(app.webViews.staticTexts["배달 할인 모아보기"].firstMatch.waitForExistence(timeout: 20))
+        let offer = app.webViews.buttons.matching(NSPredicate(format: "label CONTAINS %@", "할인 상세 보기")).firstMatch
+        XCTAssertTrue(offer.waitForExistence(timeout: 25))
+        offer.tap()
+        XCTAssertTrue(app.webViews.staticTexts["할인 상세"].firstMatch.waitForExistence(timeout: 10))
+        let capture = XCTAttachment(screenshot: app.screenshot())
+        capture.name = "cheap-meals-live-delivery-detail"
+        capture.lifetime = .keepAlways
+        add(capture)
+        app.webViews.buttons["상세 닫기"].firstMatch.tap()
+        tab("전체").tap()
+        XCTAssertTrue(overview.waitForExistence(timeout: 10))
+    }
 }

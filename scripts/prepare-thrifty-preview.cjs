@@ -18,9 +18,7 @@ try {
     git(['fetch', 'origin', manifest.baseCommit]);
     git(['switch', '--create', manifest.branch, manifest.baseCommit]);
   }
-  if (git(['rev-parse', 'HEAD']) !== manifest.baseCommit) {
-    throw new Error('Preview HEAD differs from the pinned base. Preserve your work; use a separate folder instead of reset.');
-  }
+  git(['merge-base', '--is-ancestor', manifest.baseCommit, 'HEAD']);
   if (git(['remote', 'get-url', 'origin']) !== manifest.repository) throw new Error('Unexpected preview origin.');
   git(['remote', 'set-url', '--push', 'origin', 'disabled://local-preview-read-only']);
   try {
@@ -30,7 +28,7 @@ try {
     if (git(['status', '--porcelain'])) throw new Error('Preview has local edits. Refusing to overwrite them.');
     git(['apply', '--check', patch]);
     git(['apply', patch]);
-    console.log('Thrifty preview applied to the pinned develop snapshot.');
+    console.log('Preview applied to the pinned develop snapshot.');
   }
   console.log('Next: npm --prefix .tools/thrifty-preview/frontend ci');
   console.log('Copy your local public build configuration to the ignored preview frontend/.env.local, then npm run dev:preview.');

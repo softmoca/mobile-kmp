@@ -1,0 +1,66 @@
+{
+  "verifiedAt": "2026-10-29T11:54:09.928645+09:00",
+  "apiOrigin": "https://dev-api.jachwi-sunbae.kr",
+  "deployedCommit": "fb7144a51757ec969bab16b3f048c970a3625d05",
+  "refreshRestoredSameMember": true,
+  "secureHttpOnlyCookie": true,
+  "queries": [
+    {
+      "path": "/api/maps/good-price-stores?latitude=37.5665&longitude=126.978&radius=1000",
+      "status": 200,
+      "unauthenticatedStatus": 401,
+      "count": 22,
+      "dataAsOf": "2026-06-30",
+      "businessTypes": {
+        "한식": 15,
+        "기타비요식업": 1,
+        "기타요식업": 4,
+        "일식": 1,
+        "양식": 1
+      }
+    },
+    {
+      "path": "/api/promotions?brand=EMART24",
+      "status": 200,
+      "unauthenticatedStatus": 401,
+      "count": 2337,
+      "collectedAt": "2026-10-29T04:02:37.147891+09:00",
+      "sourceUrl": "https://emart24.co.kr/goods/event",
+      "uncollected": false,
+      "promotionTypes": {
+        "TWO_PLUS_ONE": 777,
+        "SALE": 489,
+        "ONE_PLUS_ONE": 690,
+        "THREE_PLUS_ONE": 7,
+        "PICK_AND_MIX": 374
+      },
+      "categories": {
+        "MEAL": 593,
+        "SNACK": 194,
+        "BEVERAGE": 1280,
+        "HOUSEHOLD_GOODS": 270
+      }
+    },
+    {
+      "path": "/api/promotions?brand=SEVEN_ELEVEN",
+      "status": 200,
+      "unauthenticatedStatus": 401,
+      "count": 0,
+      "collectedAt": null,
+      "sourceUrl": "https://www.7-eleven.co.kr/product/presentList.asp",
+      "uncollected": true,
+      "promotionTypes": {},
+      "categories": {}
+    },
+    {
+      "path": "/api/delivery-discount-offers",
+      "status": 200,
+      "unauthenticatedStatus": 401,
+      "count": 108,
+      "platforms": {
+        "BAEMIN": 71,
+        "COUPANG_EATS": 37
+      }
+    }
+  ]
+}

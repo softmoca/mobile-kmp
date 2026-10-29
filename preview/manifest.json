@@ -1,7 +1,8 @@
 {
   "repository": "https://github.com/woowacourse-teams/2026-jachwi-sunbae.git",
-  "baseCommit": "43b8d66352564e16af5db5c63585f565b7756056",
+  "baseCommit": "021267b55ac699d02ff0ccbf0a24f7da7fa73e0e",
   "prototypeCommit": "ec4aa5c139be781ac7942b4e60575f57820bd6db",
-  "branch": "codex/mobile-thrifty-preview",
-  "patch": "thrifty.patch"
+  "branch": "codex/mobile-cheap-meals",
+  "patch": "cheap-meals.patch",
+  "entry": "src/pages/cheap-meals/CheapMealsPage.tsx"
 }
