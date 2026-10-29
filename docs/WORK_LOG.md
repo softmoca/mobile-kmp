@@ -94,3 +94,10 @@
 - [실기기 확인 기록](verification/cheap-meals-iphone-manual-2026-10-29.json)을 추가하고 CHEAP_MEALS·빌드 보고서·구현 상태의 해당 대기 항목을 완료로 갱신했다. 이전 인증 실패·배포 중단·복구 JSON은 당시 상태 그대로 보존한다.
 - 이번 변경은 문서와 검증 JSON뿐이다. 문서 포맷 검사·JSON 구문 검사·Git diff를 확인하고 개인 `codex/cheap-meals`에 로컬 커밋한다. 기존 Xcode 설정 변경은 포함하지 않는다. push/merge/배포는 수행하지 않는다.
 - 권한 거부·재허용, 전화 발신, 큰 글꼴·가로 모드, iOS 16, Android 실기기는 기존 미검증 상태를 유지한다.
+
+## 2026-10-29 — 저렴한 한 끼 작업 원격 저장 승인
+
+- 사용자가 실기기 검증 완료 후 현재 작업의 push를 요청했다. 대상은 개인 저장소 `softmoca/mobile-kmp`의 `codex/cheap-meals`이다.
+- 이전 원격 기준 `6e7129c` 이후 기능 구현, 주소·지도 인증, dev 배포 중 오류·복구, 실기기 수동 검증까지의 6개 커밋과 이번 승인 기록을 함께 보존한다.
+- 독립 React clone의 구현은 `preview/cheap-meals.patch`에 포함돼 있다. `.tools`의 로컬 환경설정·인증서·키·의존성 및 미커밋 Xcode 설정은 push에 포함하지 않는다.
+- 기존 기능 테스트·플랫폼 빌드 결과를 유지하고 이번 문서 변경의 포맷·diff를 검사한다. 개인 작업 브랜치를 push한 뒤 원격 HEAD와 로컬 HEAD의 일치를 확인한다. 팀 저장소·main/develop·PR·배포는 변경하지 않는다.

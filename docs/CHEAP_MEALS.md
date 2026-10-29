@@ -12,7 +12,7 @@
 | 최신 develop 기준 | `021267b55ac699d02ff0ccbf0a24f7da7fa73e0e`           | 10월 29일 fetch 후 분기                          |
 | 이전 알뜰 지도    | clone의 `codex/mobile-thrifty-preview` / `1855200`   | 이전 미커밋 소스와 테스트를 먼저 커밋해 보존     |
 
-기존 `preview/thrifty.patch`도 남겼다. 새 소스는 `preview/cheap-meals.patch`와 `preview/manifest.json`으로 재현한다. 최신 develop의 Emotion·인증·라우터를 유지하고 예전 업소 기능만 이식했다. 과거 `/map`, 구형 인증 및 하단 네 탭은 복구하지 않았다. Xcode 프로젝트·Info.plist·서명 설정·기본 Debug/Release URL은 변경하지 않았다. 이번 작업에서는 push/merge/배포하지 않는다.
+기존 `preview/thrifty.patch`도 남겼다. 새 소스는 `preview/cheap-meals.patch`와 `preview/manifest.json`으로 재현한다. 최신 develop의 Emotion·인증·라우터를 유지하고 예전 업소 기능만 이식했다. 과거 `/map`, 구형 인증 및 하단 네 탭은 복구하지 않았다. Xcode 프로젝트·Info.plist·서명 설정·기본 Debug/Release URL은 변경하지 않았다. 구현·검증은 로컬 커밋으로 보존했으며, 10월 29일 사용자 승인에 따라 개인 원격 `softmoca/mobile-kmp`의 `codex/cheap-meals`에 push한다. 독립 React clone은 패치로 보존하고 팀 저장소 push·merge·배포는 수행하지 않는다.
 
 ## 구현
 
