@@ -1,5 +1,7 @@
 # 모바일 UI 검증 기준
 
+> 현재 `feat/webview-shell`의 iOS 실행 화면은 WKWebView입니다. 최신 실행법·검증은 [WebView QA](WEBVIEW_QA.md)와 [WebView 구조](WEBVIEW_ARCHITECTURE.md)를 따릅니다. 아래 내용은 `codex/kmp-mobile`의 기존 Compose 구현/검증 기록이며, Android는 기존 구현을 유지합니다.
+
 2026-10-27 기준. 상위 팀 저장소의 최신 React `features/auth`, 매물 목록·상세·체크리스트·지도·마이 흐름과 Controller를 읽기 전용으로 참고했다. 코드를 구현하거나 검토한 사실과 실제 기기에서 확인한 결과를 구분한다. 실행 증거는 [BUILD_REPORT](BUILD_REPORT.md), iPhone 수동 점검은 [IPHONE_QA](IPHONE_QA.md)를 따른다.
 
 ## 최신 웹과 모바일의 대응

@@ -1,5 +1,7 @@
 # 네이티브 기능과 설정
 
+> 현재 `feat/webview-shell`의 iOS 실행 화면은 WKWebView입니다. 최신 실행법·검증은 [WebView QA](WEBVIEW_QA.md)와 [WebView 구조](WEBVIEW_ARCHITECTURE.md)를 따릅니다. 아래 내용은 `codex/kmp-mobile`의 기존 Compose 구현/검증 기록이며, Android는 기존 구현을 유지합니다.
+
 확인일: 2026-10-27. 공통 Compose UI는 `PlatformServices`와 `NativeMap`만 사용한다. Android는 Kotlin/Android API, iOS는 `IOSPlatformBridge`를 구현한 Swift `IOSServices`가 Apple SDK를 호출한다. WebView는 사용하지 않는다.
 
 ## 로그인 정보

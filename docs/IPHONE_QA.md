@@ -1,5 +1,7 @@
 # 실제 iPhone 설치와 기능 점검
 
+> 현재 `feat/webview-shell`의 iOS 실행 화면은 WKWebView입니다. 최신 실행법·검증은 [WebView QA](WEBVIEW_QA.md)와 [WebView 구조](WEBVIEW_ARCHITECTURE.md)를 따릅니다. 아래 내용은 `codex/kmp-mobile`의 기존 Compose 구현/검증 기록이며, Android는 기존 구현을 유지합니다.
+
 확인일: 2026-10-27. 이 안내는 `iosApp/iosApp.xcodeproj`, 실제 빌드 결과, Apple 공식 문서를 기준으로 작성했다. **실제 iPhone 설치와 아래 수동 점검은 아직 수행하지 않았다.** 기존 로컬 Xcode의 Team·Bundle Identifier·Info.plist 변경은 보존했다. Apple 계정 인증, 기기 신뢰와 Developer Mode는 사용자가 자신의 Mac·iPhone에서 진행한다.
 
 관련 작업: [Issue #1](https://github.com/softmoca/mobile-kmp/issues/1), [Draft PR #2](https://github.com/softmoca/mobile-kmp/pull/2). 오류 수정과 검증 결과는 `codex/kmp-mobile` 브랜치에 후속 커밋으로 반영한다. 실기기 검토 전에는 PR을 Merge하지 않는다.

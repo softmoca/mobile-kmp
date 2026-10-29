@@ -1,5 +1,7 @@
 # 앱 구조와 기술 선택
 
+> 현재 `feat/webview-shell`의 iOS 실행 화면은 WKWebView입니다. 최신 실행법·검증은 [WebView QA](WEBVIEW_QA.md)와 [WebView 구조](WEBVIEW_ARCHITECTURE.md)를 따릅니다. 아래 내용은 `codex/kmp-mobile`의 기존 Compose 구현/검증 기록이며, Android는 기존 구현을 유지합니다.
+
 ## 범위와 경계
 
 `mobile-kmp`는 별도의 개인 Git 저장소다. 상위 팀 저장소의 파일과 Git 메타데이터는 변경하지 않는다. 기존 REST API만 사용하며 별도 서버·DB·WebView는 없다. 실제 데이터 대신 화면을 채우는 데모 모드는 만들지 않았다.

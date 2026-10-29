@@ -4,7 +4,7 @@ final class SmokeTests: XCTestCase {
     override func setUpWithError() throws { continueAfterFailure = false }
 
     func testAnonymousSessionAndPropertyLifecycle() throws {
-        guard ProcessInfo.processInfo.environment["RUN_DEV_UI_SMOKE"] == "1" else {
+        guard ProcessInfo.processInfo.environment["RUN_LEGACY_COMPOSE_UI_SMOKE"] == "1" else {
             throw XCTSkip("익명 로그인은 앱 실행만으로 개발 회원을 만들 수 있어 명시적 개발 UI 검사에서만 실행합니다.")
         }
         // Use the isolated QA simulator. Never reset or replace an existing user's stored session.

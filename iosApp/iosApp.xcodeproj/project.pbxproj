@@ -1,171 +1,381 @@
 // !$*UTF8*$!
 {
-    archiveVersion = 1;
-    classes = {};
-    objectVersion = 56;
-    objects = {
-        100000000000000000000001 = {isa = PBXBuildFile; fileRef = 200000000000000000000001; };
-        100000000000000000000002 = {isa = PBXBuildFile; fileRef = 200000000000000000000002; };
-        100000000000000000000003 = {isa = PBXBuildFile; fileRef = 200000000000000000000003; };
-        100000000000000000000004 = {isa = PBXBuildFile; fileRef = 200000000000000000000006; };
-        200000000000000000000001 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JachwiSunbaeApp.swift; sourceTree = "<group>"; };
-        200000000000000000000002 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IOSServices.swift; sourceTree = "<group>"; };
-        200000000000000000000003 = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-        200000000000000000000004 = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-        200000000000000000000005 = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = JachwiSunbae.app; sourceTree = BUILT_PRODUCTS_DIR; };
-        200000000000000000000006 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmokeTests.swift; sourceTree = "<group>"; };
-        200000000000000000000007 = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = iosAppUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-        300000000000000000000001 = {
-            isa = PBXGroup;
-            children = (300000000000000000000002, 300000000000000000000004, 300000000000000000000003);
-            sourceTree = "<group>";
-        };
-        300000000000000000000002 = {
-            isa = PBXGroup;
-            children = (200000000000000000000001, 200000000000000000000002, 200000000000000000000003, 200000000000000000000004);
-            path = iosApp;
-            sourceTree = "<group>";
-        };
-        300000000000000000000003 = {isa = PBXGroup; children = (200000000000000000000005,200000000000000000000007); name = Products; sourceTree = "<group>"; };
-        300000000000000000000004 = {isa = PBXGroup; children = (200000000000000000000006); path = iosAppUITests; sourceTree = "<group>"; };
-        400000000000000000000001 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (100000000000000000000001,100000000000000000000002); runOnlyForDeploymentPostprocessing = 0; };
-        400000000000000000000002 = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (100000000000000000000003); runOnlyForDeploymentPostprocessing = 0; };
-        400000000000000000000003 = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
-        400000000000000000000005 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (100000000000000000000004); runOnlyForDeploymentPostprocessing = 0; };
-        400000000000000000000004 = {
-            isa = PBXShellScriptBuildPhase;
-            buildActionMask = 2147483647;
-            files = ();
-            inputPaths = ();
-            outputPaths = ();
-            alwaysOutOfDate = 1;
-            name = "Build Compose framework";
-            runOnlyForDeploymentPostprocessing = 0;
-            shellPath = /bin/sh;
-            shellScript = "if [ \"$OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED\" = \"YES\" ]; then exit 0; fi\ncd \"$SRCROOT/..\"\nif [ -z \"$JAVA_HOME\" ]; then export JAVA_HOME=$(/usr/libexec/java_home -v 21); fi\n./gradlew :composeApp:embedAndSignAppleFrameworkForXcode\n";
-        };
-        500000000000000000000001 = {
-            isa = PBXNativeTarget;
-            buildConfigurationList = 700000000000000000000002;
-            buildPhases = (400000000000000000000004,400000000000000000000001,400000000000000000000003,400000000000000000000002);
-            buildRules = ();
-            dependencies = ();
-            name = iosApp;
-            productName = JachwiSunbae;
-            productReference = 200000000000000000000005;
-            productType = "com.apple.product-type.application";
-        };
-        500000000000000000000002 = {
-            isa = PBXNativeTarget;
-            buildConfigurationList = 700000000000000000000003;
-            buildPhases = (400000000000000000000005);
-            buildRules = ();
-            dependencies = (900000000000000000000001);
-            name = iosAppUITests;
-            productName = iosAppUITests;
-            productReference = 200000000000000000000007;
-            productType = "com.apple.product-type.bundle.ui-testing";
-        };
-        900000000000000000000001 = {isa = PBXTargetDependency; target = 500000000000000000000001; targetProxy = 900000000000000000000002; };
-        900000000000000000000002 = {isa = PBXContainerItemProxy; containerPortal = 600000000000000000000001; proxyType = 1; remoteGlobalIDString = 500000000000000000000001; remoteInfo = iosApp; };
-        600000000000000000000001 = {
-            isa = PBXProject;
-            attributes = {BuildIndependentTargetsInParallel = YES; LastUpgradeCheck = 1600; TargetAttributes = {500000000000000000000001 = {CreatedOnToolsVersion = 16.0; }; }; };
-            buildConfigurationList = 700000000000000000000001;
-            compatibilityVersion = "Xcode 14.0";
-            developmentRegion = ko;
-            hasScannedForEncodings = 0;
-            knownRegions = (ko,en,Base);
-            mainGroup = 300000000000000000000001;
-            productRefGroup = 300000000000000000000003;
-            projectDirPath = "";
-            projectRoot = "";
-            targets = (500000000000000000000001,500000000000000000000002);
-        };
-        700000000000000000000001 = {isa = XCConfigurationList; buildConfigurations = (800000000000000000000001,800000000000000000000002); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
-        700000000000000000000002 = {isa = XCConfigurationList; buildConfigurations = (800000000000000000000003,800000000000000000000004); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
-        700000000000000000000003 = {isa = XCConfigurationList; buildConfigurations = (800000000000000000000005,800000000000000000000006); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
-        800000000000000000000005 = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGN_STYLE = Automatic; GENERATE_INFOPLIST_FILE = YES; PRODUCT_BUNDLE_IDENTIFIER = kr.jachwisunbae.app.uitests; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1,2"; TEST_TARGET_NAME = iosApp; }; name = Debug; };
-        800000000000000000000006 = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGN_STYLE = Automatic; GENERATE_INFOPLIST_FILE = YES; PRODUCT_BUNDLE_IDENTIFIER = kr.jachwisunbae.app.uitests; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1,2"; TEST_TARGET_NAME = iosApp; }; name = Release; };
-        800000000000000000000001 = {
-            isa = XCBuildConfiguration;
-            buildSettings = {
-                ALWAYS_SEARCH_USER_PATHS = NO;
-                ARCHS = arm64;
-                CLANG_ENABLE_MODULES = YES;
-                CLANG_ENABLE_OBJC_ARC = YES;
-                DEBUG_INFORMATION_FORMAT = dwarf;
-                ENABLE_USER_SCRIPT_SANDBOXING = NO;
-                GCC_C_LANGUAGE_STANDARD = gnu17;
-                IPHONEOS_DEPLOYMENT_TARGET = 16.0;
-                ONLY_ACTIVE_ARCH = YES;
-                SDKROOT = iphoneos;
-                SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
-                SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-            };
-            name = Debug;
-        };
-        800000000000000000000002 = {
-            isa = XCBuildConfiguration;
-            buildSettings = {
-                ALWAYS_SEARCH_USER_PATHS = NO;
-                ARCHS = arm64;
-                CLANG_ENABLE_MODULES = YES;
-                CLANG_ENABLE_OBJC_ARC = YES;
-                DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-                ENABLE_USER_SCRIPT_SANDBOXING = NO;
-                GCC_C_LANGUAGE_STANDARD = gnu17;
-                IPHONEOS_DEPLOYMENT_TARGET = 16.0;
-                SDKROOT = iphoneos;
-                SWIFT_COMPILATION_MODE = wholemodule;
-                SWIFT_OPTIMIZATION_LEVEL = "-O";
-                VALIDATE_PRODUCT = YES;
-            };
-            name = Release;
-        };
-        800000000000000000000003 = {
-            isa = XCBuildConfiguration;
-            buildSettings = {
-                ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-                CODE_SIGN_STYLE = Automatic;
-                CURRENT_PROJECT_VERSION = 1;
-                ENABLE_PREVIEWS = YES;
-                FRAMEWORK_SEARCH_PATHS = ("$(inherited)","$(SRCROOT)/../composeApp/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)");
-                GENERATE_INFOPLIST_FILE = NO;
-                INFOPLIST_FILE = iosApp/Info.plist;
-                LD_RUNPATH_SEARCH_PATHS = ("$(inherited)","@executable_path/Frameworks");
-                MARKETING_VERSION = 1.0;
-                OTHER_LDFLAGS = ("$(inherited)","-framework",ComposeApp,"-lsqlite3");
-                PRODUCT_BUNDLE_IDENTIFIER = kr.jachwisunbae.app.dev;
-                PRODUCT_NAME = JachwiSunbae;
-                SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-                SUPPORTS_MACCATALYST = NO;
-                SWIFT_VERSION = 5.0;
-                TARGETED_DEVICE_FAMILY = "1,2";
-            };
-            name = Debug;
-        };
-        800000000000000000000004 = {
-            isa = XCBuildConfiguration;
-            buildSettings = {
-                ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-                CODE_SIGN_STYLE = Automatic;
-                CURRENT_PROJECT_VERSION = 1;
-                FRAMEWORK_SEARCH_PATHS = ("$(inherited)","$(SRCROOT)/../composeApp/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)");
-                GENERATE_INFOPLIST_FILE = NO;
-                INFOPLIST_FILE = iosApp/Info.plist;
-                LD_RUNPATH_SEARCH_PATHS = ("$(inherited)","@executable_path/Frameworks");
-                MARKETING_VERSION = 1.0;
-                OTHER_LDFLAGS = ("$(inherited)","-framework",ComposeApp,"-lsqlite3");
-                PRODUCT_BUNDLE_IDENTIFIER = kr.jachwisunbae.app;
-                PRODUCT_NAME = JachwiSunbae;
-                SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-                SUPPORTS_MACCATALYST = NO;
-                SWIFT_VERSION = 5.0;
-                TARGETED_DEVICE_FAMILY = "1,2";
-            };
-            name = Release;
-        };
-    };
-    rootObject = 600000000000000000000001;
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		100000000000000000000001 /* JachwiSunbaeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000001 /* JachwiSunbaeApp.swift */; };
+		100000000000000000000002 /* IOSServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000002 /* IOSServices.swift */; };
+		100000000000000000000003 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000003 /* Assets.xcassets */; };
+		100000000000000000000004 /* SmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000006 /* SmokeTests.swift */; };
+		100000000000000000000008 /* WebViewConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000008 /* WebViewConfiguration.swift */; };
+		100000000000000000000009 /* WebViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000009 /* WebViewModel.swift */; };
+		100000000000000000000010 /* WebViewScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000010 /* WebViewScreen.swift */; };
+		100000000000000000000011 /* WebViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000011; };
+		100000000000000000000012 /* WebViewConfiguration.swift in Test Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000008; };
+		100000000000000000000013 /* WebViewModel.swift in Test Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000009; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		900000000000000000000002 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 600000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 500000000000000000000001;
+			remoteInfo = iosApp;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		200000000000000000000001 /* JachwiSunbaeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JachwiSunbaeApp.swift; sourceTree = "<group>"; };
+		200000000000000000000002 /* IOSServices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IOSServices.swift; sourceTree = "<group>"; };
+		200000000000000000000003 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		200000000000000000000004 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		200000000000000000000005 /* JachwiSunbae.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = JachwiSunbae.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		200000000000000000000006 /* SmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmokeTests.swift; sourceTree = "<group>"; };
+		200000000000000000000007 /* iosAppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = iosAppUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		200000000000000000000008 /* WebViewConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewConfiguration.swift; sourceTree = "<group>"; };
+		200000000000000000000009 /* WebViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewModel.swift; sourceTree = "<group>"; };
+		200000000000000000000010 /* WebViewScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewScreen.swift; sourceTree = "<group>"; };
+		200000000000000000000011 /* WebViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewTests.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		400000000000000000000003 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		300000000000000000000001 = {
+			isa = PBXGroup;
+			children = (
+				300000000000000000000002 /* iosApp */,
+				300000000000000000000004 /* iosAppUITests */,
+				300000000000000000000003 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		300000000000000000000002 /* iosApp */ = {
+			isa = PBXGroup;
+			children = (
+				200000000000000000000008 /* WebViewConfiguration.swift */,
+				200000000000000000000009 /* WebViewModel.swift */,
+				200000000000000000000010 /* WebViewScreen.swift */,
+				200000000000000000000001 /* JachwiSunbaeApp.swift */,
+				200000000000000000000002 /* IOSServices.swift */,
+				200000000000000000000003 /* Assets.xcassets */,
+				200000000000000000000004 /* Info.plist */,
+			);
+			path = iosApp;
+			sourceTree = "<group>";
+		};
+		300000000000000000000003 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				200000000000000000000005 /* JachwiSunbae.app */,
+				200000000000000000000007 /* iosAppUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		300000000000000000000004 /* iosAppUITests */ = {
+			isa = PBXGroup;
+			children = (
+				200000000000000000000011 /* WebViewTests.swift */,
+				200000000000000000000006 /* SmokeTests.swift */,
+			);
+			path = iosAppUITests;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		500000000000000000000001 /* iosApp */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 700000000000000000000002 /* Build configuration list for PBXNativeTarget "iosApp" */;
+			buildPhases = (
+				400000000000000000000001 /* Sources */,
+				400000000000000000000003 /* Frameworks */,
+				400000000000000000000002 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = iosApp;
+			productName = JachwiSunbae;
+			productReference = 200000000000000000000005 /* JachwiSunbae.app */;
+			productType = "com.apple.product-type.application";
+		};
+		500000000000000000000002 /* iosAppUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 700000000000000000000003 /* Build configuration list for PBXNativeTarget "iosAppUITests" */;
+			buildPhases = (
+				400000000000000000000005 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				900000000000000000000001 /* PBXTargetDependency */,
+			);
+			name = iosAppUITests;
+			productName = iosAppUITests;
+			productReference = 200000000000000000000007 /* iosAppUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		600000000000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					500000000000000000000001 = {
+						CreatedOnToolsVersion = 16.0;
+					};
+				};
+			};
+			buildConfigurationList = 700000000000000000000001 /* Build configuration list for PBXProject "iosApp" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = ko;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				ko,
+				en,
+				Base,
+			);
+			mainGroup = 300000000000000000000001;
+			productRefGroup = 300000000000000000000003 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				500000000000000000000001 /* iosApp */,
+				500000000000000000000002 /* iosAppUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		400000000000000000000002 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				100000000000000000000003 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		400000000000000000000004 /* Build Compose framework */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Build Compose framework";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if [ \"$OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED\" = \"YES\" ]; then exit 0; fi\ncd \"$SRCROOT/..\"\nif [ -z \"$JAVA_HOME\" ]; then export JAVA_HOME=$(/usr/libexec/java_home -v 21); fi\n./gradlew :composeApp:embedAndSignAppleFrameworkForXcode\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		400000000000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				100000000000000000000008 /* WebViewConfiguration.swift in Sources */,
+				100000000000000000000009 /* WebViewModel.swift in Sources */,
+				100000000000000000000010 /* WebViewScreen.swift in Sources */,
+				100000000000000000000001 /* JachwiSunbaeApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		400000000000000000000005 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				100000000000000000000011 /* WebViewTests.swift in Sources */,
+				100000000000000000000012 /* WebViewConfiguration.swift in Test Sources */,
+				100000000000000000000013 /* WebViewModel.swift in Test Sources */,
+				100000000000000000000004 /* SmokeTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		900000000000000000000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 500000000000000000000001 /* iosApp */;
+			targetProxy = 900000000000000000000002 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		800000000000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = arm64;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		800000000000000000000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = arm64;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		800000000000000000000003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../composeApp/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)",
+				);
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = iosApp/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = "$(inherited)";
+				PRODUCT_BUNDLE_IDENTIFIER = kr.jachwisunbae.app.dev;
+				PRODUCT_NAME = JachwiSunbae;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		800000000000000000000004 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../composeApp/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)",
+				);
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = iosApp/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = "$(inherited)";
+				PRODUCT_BUNDLE_IDENTIFIER = kr.jachwisunbae.app;
+				PRODUCT_NAME = JachwiSunbae;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		800000000000000000000005 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = kr.jachwisunbae.app.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = iosApp;
+			};
+			name = Debug;
+		};
+		800000000000000000000006 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = kr.jachwisunbae.app.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = iosApp;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		700000000000000000000001 /* Build configuration list for PBXProject "iosApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				800000000000000000000001 /* Debug */,
+				800000000000000000000002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		700000000000000000000002 /* Build configuration list for PBXNativeTarget "iosApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				800000000000000000000003 /* Debug */,
+				800000000000000000000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		700000000000000000000003 /* Build configuration list for PBXNativeTarget "iosAppUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				800000000000000000000005 /* Debug */,
+				800000000000000000000006 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 600000000000000000000001 /* Project object */;
 }

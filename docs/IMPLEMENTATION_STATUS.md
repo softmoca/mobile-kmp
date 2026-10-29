@@ -1,5 +1,19 @@
 # 구현 상태
 
+> 현재 `feat/webview-shell`의 iOS 실행 화면은 WKWebView입니다. 최신 실행법·검증은 [WebView QA](WEBVIEW_QA.md)와 [WebView 구조](WEBVIEW_ARCHITECTURE.md)를 따릅니다. 아래 내용은 `codex/kmp-mobile`의 기존 Compose 구현/검증 기록이며, Android는 기존 구현을 유지합니다.
+
+## 현재 WebView 전환 결과 — 2026-10-27
+
+- `feat/webview-shell`에서 dev React를 WKWebView로 표시한다. KMP 소스와 Android는 보존하고 iOS 실행 대상만 분리했다.
+- URL 정책 Debug/Release 테스트 통과. dev XCTest에서 인증·쿠키 속성·동일 회원 복원·PNG 업로드·PDF 다운로드·React Router·재실행 확인. 별도 runner 프로세스의 동일 회원 복원도 통과했다.
+- iOS Simulator 빌드, iPhone arm64 미서명 및 기존 개인 설정의 **서명 빌드 성공**. Android 단위 테스트·APK·lint·KMP Simulator framework 검사도 성공했다.
+- 개인 저장소의 로컬 HTTPS 어댑터로 React 화면·dev 프록시 login/refresh·Secure/HttpOnly 쿠키·WSS HMR의 hot/hash/ok 메시지를 검증했다. 팀 소스 편집에 따른 HMR 화면 반영은 미검증이다.
+- 초기 새 Simulator 부팅/설치 지연과 일시적인 웹 API 연결 실패를 관찰했으며 해당 QA Simulator 재시작·재시도로 복구했다. ATS/TLS 검증을 완화하지 않았다.
+- 사용자가 iPhone을 연결한 뒤 같은 Bundle ID로 업데이트 설치·실행·재실행에 성공했고 실제 홈/매물 기록 지도/등록 폼을 확인했다. 사진 선택/HEIC·실제 GPS·PDF 공유/Files·전화/메일 전환은 미검증이다. 기존 서명 필드와 기존 Info.plist 값은 모두 보존했다. 네이티브 Keychain 세션은 웹 쿠키로 자동 이전하지 않는다.
+- 상위 저장소는 읽기만 했다. 작업 중 상위 Git 상태는 별도의 작업에 의해 변경되어 시작 상태와 달라졌으며 되돌리거나 수정하지 않았다. Push·PR 변경·Merge·운영 배포는 하지 않았다.
+
+구체적인 로그·스크린샷·재현 명령·실기기 체크리스트는 [WEBVIEW_QA](WEBVIEW_QA.md)를 따른다. 아래는 보존한 Compose 검증 기록이다.
+
 2026-10-27 기준. 이번 목표는 실제 개발 API를 사용하는 iPhone 앱을 반복 개선하는 것이다. 구현·API 실행·Simulator UI·물리 기기 검증을 구분한다. 최신 실행 결과는 [BUILD_REPORT](BUILD_REPORT.md)에 기록한다.
 
 | 기능                 | 현재 구현                                                                            | 검증 범위                                                             |

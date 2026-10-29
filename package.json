@@ -2,6 +2,8 @@
   "name": "jachwi-sunbae-mobile-docs",
   "private": true,
   "scripts": {
+    "dev:web": "node scripts/local-web.cjs",
+    "test:webview": "sh scripts/test-webview.sh",
     "format:docs": "prettier --config .prettierrc.json --ignore-path .prettierignore --write \"*.md\" \"docs/**/*.md\"",
     "format:docs:check": "prettier --config .prettierrc.json --ignore-path .prettierignore --check \"*.md\" \"docs/**/*.md\""
   },

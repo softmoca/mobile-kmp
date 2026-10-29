@@ -1,0 +1,53 @@
+{
+  "date": "2026-10-27",
+  "branch": "feat/webview-shell",
+  "base": "ff869a309f0e0d41ec996d106684c9fa6c02b114",
+  "defaultWebURL": "https://dev.jachwi-sunbae.kr",
+  "simulator": "iPhone 12 mini / iOS 27.0",
+  "xcode": "27.1",
+  "checks": {
+    "debugReleaseURLPolicy": "passed",
+    "simulatorBuild": "passed",
+    "devWebKitAndReactTests": {
+      "passed": 3,
+      "legacySkipped": 1
+    },
+    "separateProcessCookieRestore": "passed",
+    "unavailableServerRetryUI": "passed",
+    "iPhoneArm64UnsignedBuild": "passed",
+    "iPhoneArm64SignedBuild": "passed",
+    "androidUnitApkLint": "passed",
+    "legacyKMPiOSFramework": "passed",
+    "localHttpsReact": "passed",
+    "localDevProxySessionRestore": "passed",
+    "localWssHmrHandshake": "passed",
+    "markdownFormatCheck": "passed",
+    "physicalUpdateInstall": "passed",
+    "physicalLaunchAndRelaunch": "passed",
+    "physicalReactHomeAndRouting": "passed"
+  },
+  "notVerified": [
+    "system photo picker and HEIC",
+    "real GPS and denied permission recovery",
+    "Quick Look share and Files save",
+    "Safari/tel/mailto handoff",
+    "React source edit to iPhone HMR",
+    "new deployed web release without rebuilding",
+    "keyboard and background/offline drafts"
+  ],
+  "preserved": [
+    "original branch and Draft PR #2",
+    "all original signing settings",
+    "all original Info.plist entries",
+    "Kotlin and Android source",
+    "legacy Keychain"
+  ],
+  "sideEffects": "Only disposable dev QA records created and removed; anonymous test accounts remain. No push, merge or production deployment.",
+  "notes": [
+    "Parent Git state changed independently during the task; no parent writes were performed.",
+    "Local HTTPS server stopped after verification; isolated QA CA trust was added only to the new test simulator.",
+    "Initial simulator startup/network failures recovered without weakening TLS or ATS.",
+    "User connected the physical iPhone; installed over the existing matching bundle without uninstalling. Personal signing stayed unchanged."
+  ],
+  "physicalDevice": "iPhone 12 mini / iOS 27.0.1"
+}
